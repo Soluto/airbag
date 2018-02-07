@@ -1,7 +1,7 @@
 # airbag
 airbag is a tiny sidecar for your docker containers, meant to handle jwt authentication and basic metrics collection for you.
 
-## configuration
+## Configuration
 airbag uses environment variables for configuration, and supports the following options:
 * BACKEND_HOST_NAME - The name or ip of your service. Requests will be forwarded to this host once authenticated.
 * BACKEND_PORT - The port exposed by your service. Requests will be forwarded to this port on the host once authenticated.
