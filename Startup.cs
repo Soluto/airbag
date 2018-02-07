@@ -15,7 +15,12 @@ namespace airbag
 {
     public class Startup
     {
-        private IConfigurationRoot Configuration { get; set; }
+        private readonly IConfiguration configuration;
+
+        public Startup(IConfiguration configuration)
+        {
+            this.configuration = configuration;
+        }
 
         public void ConfigureServices(IServiceCollection services)
         {
@@ -26,19 +31,16 @@ namespace airbag
                     options.TokenValidationParameters = new TokenValidationParameters
                     {
                         ValidateIssuer = false,
-                        ValidIssuer = Configuration.GetValue<string>("ISSUER"),
+                        ValidIssuer = configuration.GetValue<string>("ISSUER"),
                         ValidateAudience = false
                     };
-                    options.Authority = Configuration.GetValue<string>("AUTHORITY");
+                    options.Authority = configuration.GetValue<string>("AUTHORITY");
                     options.RequireHttpsMetadata = true;
                 });
         }
 
         public void Configure(IApplicationBuilder app, IHostingEnvironment env)
         {
-            var builder = new ConfigurationBuilder().AddEnvironmentVariables();
-            Configuration = builder.Build();
-
             if (env.IsDevelopment())
             {
                 app.UseDeveloperExceptionPage();
@@ -62,8 +64,8 @@ namespace airbag
             app.RunProxy(new ProxyOptions
             {
                 Scheme = "http",
-                Host = "localhost",
-                Port = Configuration.GetValue<string>("BACKEND_SERVICE_PORT")
+                Host = configuration.GetValue<string>("BACKEND_HOST_NAME"),
+                Port = configuration.GetValue<string>("BACKEND_SERVICE_PORT")
             });
         }
     }

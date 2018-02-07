@@ -25,6 +25,7 @@ namespace airbag
 
         public static IWebHost BuildWebHost(string[] args) =>
             WebHost.CreateDefaultBuilder(args)
+             .UseConfiguration(Configuration)
              .ConfigureMetricsWithDefaults(
                 builder =>
                 {
