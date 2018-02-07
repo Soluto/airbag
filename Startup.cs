@@ -30,7 +30,6 @@ namespace airbag
 
                     options.TokenValidationParameters = new TokenValidationParameters
                     {
-                        ValidateIssuer = false,
                         ValidIssuer = configuration.GetValue<string>("ISSUER"),
                         ValidateAudience = false
                     };
