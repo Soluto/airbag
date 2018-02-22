@@ -5,7 +5,7 @@ services:
      build: ../src
      depends_on:
       - valid_auth_server
-      - invalid_auth_server      
+      - auth_server_with_different_issuer      
       - protected_api
      environment:
        - ASPNETCORE_ENVIRONMENT=Development
@@ -27,13 +27,21 @@ services:
        - ASPNETCORE_ENVIRONMENT=Development
        - ISSUER_URI=http://localhost:5002       
 
-   invalid_auth_server:
+   auth_server_with_different_issuer:
      build: ../sample_auth_server
      ports:
        - "5004:80"
      environment:
        - ASPNETCORE_ENVIRONMENT=Development
        - ISSUER_URI=http://someuri.com:1234
+
+   auth_server_with_different_signature:
+     build: ../sample_auth_server
+     ports:
+       - "5005:80"
+     environment:
+       - ASPNETCORE_ENVIRONMENT=Development
+       - ISSUER_URI=http://localhost:5002
 
    protected_api:
      image: jmalloc/echo-server

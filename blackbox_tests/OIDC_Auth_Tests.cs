@@ -15,19 +15,21 @@ namespace BlackboxTests
     // see the blackbox_tests/docker-compose file for details
     public class OIDC_Auth_Tests
     {
-        private static DiscoveryResponse validDiscovery;
-        private static DiscoveryResponse invalidDiscovery;
         private static TokenClient validTokenClient;
-        private static TokenClient invalidTokenClient;
+        private static TokenClient differentIssuerTokenClient;
+        private static TokenClient otherSignatureTokenClient;
         private const string airbagUrl = "http://localhost:5001/";
 
         public OIDC_Auth_Tests()
         {
-            invalidDiscovery = DiscoveryClient.GetAsync("http://localhost:5004").Result;
-            invalidTokenClient = new TokenClient(invalidDiscovery.TokenEndpoint, "client", "secret");
-
-            validDiscovery = DiscoveryClient.GetAsync("http://localhost:5002").Result;
+            var validDiscovery = DiscoveryClient.GetAsync("http://localhost:5002").Result;
             validTokenClient = new TokenClient(validDiscovery.TokenEndpoint, "client", "secret");
+
+            var otherIssuerDiscovery = DiscoveryClient.GetAsync("http://localhost:5004").Result;
+            differentIssuerTokenClient = new TokenClient(otherIssuerDiscovery.TokenEndpoint, "client", "secret");
+
+            var otherSignatureDiscovery = DiscoveryClient.GetAsync("http://localhost:5005").Result;
+            otherSignatureTokenClient = new TokenClient(otherSignatureDiscovery.TokenEndpoint, "client", "secret");
         }
 
         [Fact]
@@ -68,7 +70,17 @@ namespace BlackboxTests
         [Fact]
         public async Task RequestWithWrongIssuer_Return403Forbidden()
         {
-            var tokenResponse = await invalidTokenClient.RequestClientCredentialsAsync("api1");
+            var tokenResponse = await differentIssuerTokenClient.RequestClientCredentialsAsync("api1");
+
+            var result = await SendRequest(tokenResponse.AccessToken);
+            Assert.Equal(HttpStatusCode.Forbidden, result.StatusCode);
+        }
+
+
+        [Fact]
+        public async Task RequestWithWrongSignature_Return403Forbidden()
+        {
+            var tokenResponse = await otherSignatureTokenClient.RequestClientCredentialsAsync("api1");
 
             var result = await SendRequest(tokenResponse.AccessToken);
             Assert.Equal(HttpStatusCode.Forbidden, result.StatusCode);
@@ -77,7 +89,7 @@ namespace BlackboxTests
         [Fact]
         public async Task RequestWithWrongAudeince_Return403Forbidden()
         {
-            var tokenResponse = await invalidTokenClient.RequestClientCredentialsAsync("api2");
+            var tokenResponse = await differentIssuerTokenClient.RequestClientCredentialsAsync("api2");
 
             var result = await SendRequest(tokenResponse.AccessToken);
             Assert.Equal(HttpStatusCode.Forbidden, result.StatusCode);
