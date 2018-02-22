@@ -1,0 +1,40 @@
+version: '3'
+
+services:
+   airbag:
+     build: ../src
+     depends_on:
+      - valid_auth_server
+      - invalid_auth_server      
+      - protected_api
+     environment:
+       - ASPNETCORE_ENVIRONMENT=Development
+       - AUTHORITY=http://valid_auth_server
+       - ISSUER=http://localhost:5002
+       - AUDIENCE=api1
+       - BACKEND_HOST_NAME=protected_api
+       - BACKEND_SERVICE_PORT=80
+       - COLLECT_METRICS=false
+     ports:
+       - "5001:80" 
+
+   valid_auth_server:
+     build: ../sample_auth_server
+     ports:
+       - "5002:80"
+     environment:
+       - ASPNETCORE_ENVIRONMENT=Development
+       - ISSUER_URI=http://localhost:5002       
+
+   invalid_auth_server:
+     build: ../sample_auth_server
+     ports:
+       - "5004:80"
+     environment:
+       - ASPNETCORE_ENVIRONMENT=Development
+       - ISSUER_URI=http://someuri.com:1234
+  
+   protected_api:
+     image: nginx
+     ports:
+       - "5003:80"

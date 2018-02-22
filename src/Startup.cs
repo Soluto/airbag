@@ -11,7 +11,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.IdentityModel.Tokens;
 
-namespace airbag
+namespace Airbag
 {
     public class Startup
     {
@@ -24,17 +24,26 @@ namespace airbag
 
         public void ConfigureServices(IServiceCollection services)
         {
+            var isDevEnv = string.Equals(configuration.GetValue<string>("ASPNETCORE_ENVIRONMENT"), "Development", StringComparison.OrdinalIgnoreCase);
+
             services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
                     .AddJwtBearer(options =>
                 {
-
                     options.TokenValidationParameters = new TokenValidationParameters
                     {
                         ValidIssuer = configuration.GetValue<string>("ISSUER"),
-                        ValidateAudience = false
+                        ValidAudience = configuration.GetValue<string>("AUDIENCE"),
+                        ValidateLifetime = true
                     };
+
                     options.Authority = configuration.GetValue<string>("AUTHORITY");
-                    options.RequireHttpsMetadata = true;
+
+                    // for testing 
+                    if (isDevEnv)
+                    {
+                        options.TokenValidationParameters.ClockSkew = TimeSpan.Zero;
+                        options.RequireHttpsMetadata = false;
+                    }
                 });
         }
 
