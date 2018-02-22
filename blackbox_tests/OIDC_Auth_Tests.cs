@@ -40,7 +40,14 @@ namespace BlackboxTests
         }
 
         [Fact]
-        public async Task RequestWithoutAuthorizationHeader_Return403Forbidden()
+        public async Task RequestWithoutAuthorizationHeader_RouteIsWhitelisted_ForwardRequestToBackendContainer()
+        {
+            var result = await new HttpClient().GetAsync(airbagUrl + "isAlive");
+            Assert.Equal(HttpStatusCode.OK, result.StatusCode);
+        }
+
+        [Fact]
+        public async Task RequestWithoutAuthorizationHeader_RouteIsNotWhitelisted_Return403Forbidden()
         {
             var result = await new HttpClient().GetAsync(airbagUrl);
             Assert.Equal(HttpStatusCode.Forbidden, result.StatusCode);

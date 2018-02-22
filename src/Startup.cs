@@ -56,18 +56,15 @@ namespace Airbag
 
             app.UseAuthentication();
 
-            app.Use(async (ctx, next) =>
+            var whitelistConfig = configuration.GetValue<string>("WHITELISTED_ROUTES");
+            IEnumerable<string> whitelisted = new List<string>();
+
+            if (whitelistConfig != null)
             {
-                var result = ctx.User?.Identity?.IsAuthenticated;
-                if (result.HasValue && result.Value)
-                {
-                    await next();
-                }
-                else
-                {
-                    ctx.Response.StatusCode = 403;
-                }
-            });
+                whitelisted = whitelistConfig.Split(',');
+            }
+
+            app.UseAuthenticatedRoutes(whitelisted);
 
             app.RunProxy(new ProxyOptions
             {
