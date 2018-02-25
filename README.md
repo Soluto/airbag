@@ -8,7 +8,7 @@ airbag uses environment variables for configuration, and supports the following 
 * AUTHORITY - The jwt authentication authority to use for authentication and token validation.
 * AUDIENCE - Only tokens for this audience will be accepted and considered valid.
 * ISSUER - Only tokens from this issuer will be accepted and considered valid.
-* WHITELISTED_ROUTES - Backend routes that shouldn't be authenticated (for example, a health-check endpoint). Seperate the routes with `,`.  
+* UNAUTHENTICATED_ROUTES - Backend routes that shouldn't be authenticated (for example, a health-check endpoint). Seperate the routes with `,`.  
 example: `/isAlive,/health,/something/anonymous`
 * COLLECT_METRICS - Enable or disable metrics collection. Metrics are collected using [AppMetrics](https://github.com/AppMetrics/AppMetrics)
 

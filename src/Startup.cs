@@ -56,15 +56,15 @@ namespace Airbag
 
             app.UseAuthentication();
 
-            var whitelistConfig = configuration.GetValue<string>("WHITELISTED_ROUTES");
-            IEnumerable<string> whitelisted = new List<string>();
+            var unauthenticatedConfig = configuration.GetValue<string>("UNAUTHENTICATED_ROUTES");
+            IEnumerable<string> unauthenticatedRoutes = new List<string>();
 
-            if (whitelistConfig != null)
+            if (unauthenticatedConfig != null)
             {
-                whitelisted = whitelistConfig.Split(',');
+                unauthenticatedRoutes = unauthenticatedConfig.Split(',');
             }
 
-            app.UseAuthenticatedRoutes(whitelisted);
+            app.UseAuthenticatedRoutes(unauthenticatedRoutes);
 
             app.RunProxy(new ProxyOptions
             {

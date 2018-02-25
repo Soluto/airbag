@@ -15,7 +15,7 @@ services:
        - BACKEND_HOST_NAME=protected_api
        - BACKEND_SERVICE_PORT=8080
        - COLLECT_METRICS=false
-       - WHITELISTED_ROUTES=/isAlive
+       - UNAUTHENTICATED_ROUTES=/isAlive
      ports:
        - "5001:80" 
 

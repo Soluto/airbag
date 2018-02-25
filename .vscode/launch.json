@@ -37,7 +37,7 @@
         "BACKEND_HOST_NAME": "localhost",
         "BACKEND_SERVICE_PORT": "5003",
         "COLLECT_METRICS": "false",
-        "WHITELISTED_ROUTES": "/isAlive"
+        "UNAUTHENTICATED_ROUTES": "/isAlive"
       },
       "sourceFileMap": {
         "/Views": "${workspaceFolder}/src/Views"
