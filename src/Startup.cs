@@ -26,6 +26,8 @@ namespace Airbag
         {
             var isDevEnv = string.Equals(configuration.GetValue<string>("ASPNETCORE_ENVIRONMENT"), "Development", StringComparison.OrdinalIgnoreCase);
 
+            services.AddCors();
+
             services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
                     .AddJwtBearer(options =>
                 {
@@ -53,6 +55,10 @@ namespace Airbag
             {
                 app.UseDeveloperExceptionPage();
             }
+
+            app.UseCors(builder => builder.AllowAnyOrigin()
+                                          .AllowAnyMethod()
+                                          .AllowAnyHeader());
 
             app.UseAuthentication();
 
