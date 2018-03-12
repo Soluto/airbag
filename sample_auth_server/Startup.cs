@@ -19,6 +19,8 @@ namespace SampleAuthServer
             var builder = new ConfigurationBuilder().AddEnvironmentVariables();
             var configuration = builder.Build();
 
+            services.AddCors();
+
             services.AddIdentityServer(o => o.IssuerUri = configuration.GetValue<string>("ISSUER"))
                     .AddDeveloperSigningCredential()
                     .AddInMemoryApiResources(Config.GetApiResources())
@@ -33,6 +35,10 @@ namespace SampleAuthServer
             {
                 app.UseDeveloperExceptionPage();
             }
+
+            app.UseCors(builder => builder.AllowAnyOrigin()
+                                          .AllowAnyMethod()
+                                          .AllowAnyHeader());
 
             app.UseIdentityServer();
 
