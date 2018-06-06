@@ -40,7 +40,7 @@ namespace Airbag
 
                     options.Authority = configuration.GetValue<string>("AUTHORITY");
 
-                    // for testing 
+                    // for testing
                     if (isDevEnv)
                     {
                         options.TokenValidationParameters.ClockSkew = TimeSpan.Zero;
@@ -75,8 +75,8 @@ namespace Airbag
             app.RunProxy(new ProxyOptions
             {
                 Scheme = "http",
-                Host = configuration.GetValue<string>("BACKEND_HOST_NAME"),
-                Port = configuration.GetValue<string>("BACKEND_SERVICE_PORT")
+                Host = configuration.GetValue<string>("BACKEND_HOST_NAME", "localhost"),
+                Port = configuration.GetValue<string>("BACKEND_SERVICE_PORT", "80")
             });
         }
     }
