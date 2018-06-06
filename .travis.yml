@@ -1,0 +1,12 @@
+language: csharp
+mono: none
+dotnet: 2.1
+
+install: 
+  - cd src && dotnet restore
+
+before_script:
+  - cd blackbox_tests && docker-compose up -d
+
+script:
+  - dotnet test
