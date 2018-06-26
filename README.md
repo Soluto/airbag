@@ -16,6 +16,7 @@ airbag uses environment variables for configuration, and supports the following 
 * **AUDIENCE** - Only tokens for this audience will be accepted and considered valid.
 * **ISSUER** - Only tokens from this issuer will be accepted and considered valid.
 * **UNAUTHENTICATED_ROUTES** - Backend routes that shouldn't be authenticated (for example, a health-check endpoint). Seperate the routes with `,`.  
-example: `/isAlive,/health,/something/anonymous`
+example: `/isAlive,/health,/something/anonymous`  
+If a route contains a wildcard ( * ) then all matching routes will not be authenticated (For example - `/swagger/*` will cause all routes which start with `/swagger/` to be unauthenticated.   
 * **COLLECT_METRICS** - Enable or disable metrics collection. Metrics are collected using [AppMetrics](https://github.com/AppMetrics/AppMetrics)
 
