@@ -20,7 +20,7 @@ services:
        - "5001:80" 
 
    valid_auth_server:
-     build: ../sample_auth_server
+     build: ../SampleAuthServer
      ports:
        - "5002:80"
      environment:
@@ -28,7 +28,7 @@ services:
        - ISSUER_URI=http://localhost:5002       
 
    auth_server_with_different_issuer:
-     build: ../sample_auth_server
+     build: ../SampleAuthServer
      ports:
        - "5004:80"
      environment:
@@ -36,7 +36,7 @@ services:
        - ISSUER_URI=http://someuri.com:1234
 
    auth_server_with_different_signature:
-     build: ../sample_auth_server
+     build: ../SampleAuthServer
      ports:
        - "5005:80"
      environment:

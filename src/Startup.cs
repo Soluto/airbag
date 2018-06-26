@@ -1,12 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using App.Metrics;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.IdentityModel.Tokens;
@@ -15,16 +11,16 @@ namespace Airbag
 {
     public class Startup
     {
-        private readonly IConfiguration configuration;
+        private readonly IConfiguration _configuration;
 
         public Startup(IConfiguration configuration)
         {
-            this.configuration = configuration;
+            _configuration = configuration;
         }
 
         public void ConfigureServices(IServiceCollection services)
         {
-            var isDevEnv = string.Equals(configuration.GetValue<string>("ASPNETCORE_ENVIRONMENT"), "Development", StringComparison.OrdinalIgnoreCase);
+            var isDevEnv = string.Equals(_configuration.GetValue<string>("ASPNETCORE_ENVIRONMENT"), "Development", StringComparison.OrdinalIgnoreCase);
 
             services.AddCors();
 
@@ -33,12 +29,12 @@ namespace Airbag
                 {
                     options.TokenValidationParameters = new TokenValidationParameters
                     {
-                        ValidIssuer = configuration.GetValue<string>("ISSUER"),
-                        ValidAudience = configuration.GetValue<string>("AUDIENCE"),
+                        ValidIssuer = _configuration.GetValue<string>("ISSUER"),
+                        ValidAudience = _configuration.GetValue<string>("AUDIENCE"),
                         ValidateLifetime = true
                     };
 
-                    options.Authority = configuration.GetValue<string>("AUTHORITY");
+                    options.Authority = _configuration.GetValue<string>("AUTHORITY");
 
                     // for testing
                     if (isDevEnv)
@@ -62,7 +58,7 @@ namespace Airbag
 
             app.UseAuthentication();
 
-            var unauthenticatedConfig = configuration.GetValue<string>("UNAUTHENTICATED_ROUTES");
+            var unauthenticatedConfig = _configuration.GetValue<string>("UNAUTHENTICATED_ROUTES");
             IEnumerable<string> unauthenticatedRoutes = new List<string>();
 
             if (unauthenticatedConfig != null)
@@ -75,8 +71,8 @@ namespace Airbag
             app.RunProxy(new ProxyOptions
             {
                 Scheme = "http",
-                Host = configuration.GetValue<string>("BACKEND_HOST_NAME", "localhost"),
-                Port = configuration.GetValue<string>("BACKEND_SERVICE_PORT", "80")
+                Host = _configuration.GetValue("BACKEND_HOST_NAME", "localhost"),
+                Port = _configuration.GetValue("BACKEND_SERVICE_PORT", "80")
             });
         }
     }

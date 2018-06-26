@@ -13,4 +13,4 @@ RUN dotnet publish -c Release -o out
 FROM microsoft/aspnetcore:2.0
 WORKDIR /app
 COPY --from=build-env /app/out .
-ENTRYPOINT ["dotnet", "sample_auth_server.dll"]
+ENTRYPOINT ["dotnet", "SampleAuthServer.dll"]
