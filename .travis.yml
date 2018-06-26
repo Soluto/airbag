@@ -6,7 +6,7 @@ install:
   - cd src && dotnet restore
 
 before_script:
-  - cd ../blackbox_tests && docker-compose up -d
+  - cd ../BlackboxTests && docker-compose up -d
 
 script:
   - dotnet test

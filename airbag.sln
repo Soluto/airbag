@@ -2,11 +2,11 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
 VisualStudioVersion = 15.0.26124.0
 MinimumVisualStudioVersion = 15.0.26124.0
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "airbag", "src\airbag.csproj", "{00F88900-7D19-4768-A48B-198BE0B0ECA8}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Airbag", "src\Airbag.csproj", "{00F88900-7D19-4768-A48B-198BE0B0ECA8}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "blackbox_tests", "blackbox_tests\blackbox_tests.csproj", "{AFE1AAFF-2161-41AE-BBDE-E9D9257A9E73}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "BlackboxTests", "BlackboxTests\BlackboxTests.csproj", "{AFE1AAFF-2161-41AE-BBDE-E9D9257A9E73}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "sample_auth_server", "sample_auth_server\sample_auth_server.csproj", "{3203E8EF-8F6E-4C4E-8200-388F046AE697}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SampleAuthServer", "SampleAuthServer\SampleAuthServer.csproj", "{3203E8EF-8F6E-4C4E-8200-388F046AE697}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

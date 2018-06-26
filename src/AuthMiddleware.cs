@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
@@ -9,7 +8,7 @@ namespace Airbag
 {
     public static class AuthMiddleware
     {
-        private static bool isWhitelisted(HttpContext ctx, IEnumerable<string> whitelistedRoutes)
+        private static bool IsWhitelisted(HttpContext ctx, IEnumerable<string> whitelistedRoutes)
         {
             return ctx.Request.Path.HasValue &&
                    whitelistedRoutes.Any(r => string.Equals(r, ctx.Request.Path.Value, StringComparison.OrdinalIgnoreCase));
@@ -25,7 +24,7 @@ namespace Airbag
         {
             app.Use(async (ctx, next) =>
             {
-                if (IsAuthenticated(ctx) || isWhitelisted(ctx, whitelistedRoutes))
+                if (IsAuthenticated(ctx) || IsWhitelisted(ctx, whitelistedRoutes))
                 {
                     await next();
                 }

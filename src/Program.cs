@@ -1,38 +1,32 @@
-﻿using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Threading.Tasks;
-using App.Metrics.AspNetCore;
+﻿using App.Metrics.AspNetCore;
 using App.Metrics.Formatters.Prometheus;
 using Microsoft.AspNetCore;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Logging;
 
 namespace Airbag
 {
     public class Program
     {
-        private static IConfigurationRoot Configuration;
+        private static IConfigurationRoot _configuration;
 
         public static void Main(string[] args)
         {
             var builder = new ConfigurationBuilder().AddEnvironmentVariables();
-            Configuration = builder.Build();
+            _configuration = builder.Build();
             BuildWebHost(args).Run();
         }
 
         public static IWebHost BuildWebHost(string[] args) =>
             WebHost.CreateDefaultBuilder(args)
-             .UseConfiguration(Configuration)
+             .UseConfiguration(_configuration)
              .ConfigureMetricsWithDefaults(
                 builder =>
                 {
                     builder.Configuration.Configure(
                         options =>
                         {
-                            options.Enabled = Configuration.GetValue<bool>("COLLECT_METRICS");
+                            options.Enabled = _configuration.GetValue<bool>("COLLECT_METRICS");
                         });
                 })
                 .UseMetrics(options =>

@@ -50,7 +50,7 @@
       "preLaunchTask": "build",
       // If you have changed target frameworks, make sure to update the program path.
       "program":
-        "${workspaceFolder}/blackbox_tests/bin/Debug/netcoreapp2.0/blackbox_tests.dll",
+        "${workspaceFolder}/BlackboxTests/bin/Debug/netcoreapp2.0/BlackboxTests.dll",
       "args": [],
       "cwd": "${workspaceFolder}",
       "stopAtEntry": false,
