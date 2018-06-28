@@ -29,15 +29,17 @@ namespace Airbag
                             options.Enabled = _configuration.GetValue<bool>("COLLECT_METRICS");
                         });
                 })
-                .UseMetrics(options =>
-                {
-                    options.EndpointOptions = endpointsOptions =>
-                                {
-                                    endpointsOptions.MetricsTextEndpointOutputFormatter = new MetricsPrometheusTextOutputFormatter();
-                                    endpointsOptions.MetricsEndpointOutputFormatter = new MetricsPrometheusProtobufOutputFormatter();
-                                };
-                })
-                .UseStartup<Startup>()
-                .Build();
+              .UseMetrics(options =>
+              {
+                  options.EndpointOptions = endpointsOptions =>
+                              {
+                                  endpointsOptions.MetricsTextEndpointOutputFormatter = new MetricsPrometheusTextOutputFormatter();
+                                  endpointsOptions.MetricsEndpointOutputFormatter = new MetricsPrometheusProtobufOutputFormatter();
+                              };
+              })
+              .UseStartup<Startup>()
+              .ConfigureLogging(logging =>
+                logging.AddFilter("Console", LogLevel.Warning)
+              .Build();
     }
 }
