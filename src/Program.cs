@@ -39,7 +39,7 @@ namespace Airbag
               })
               .UseStartup<Startup>()
               .ConfigureLogging(logging =>
-                logging.AddFilter("Console", LogLevel.Warning)
+                logging.AddFilter("Console", LogLevel.Warning))
               .Build();
     }
 }
