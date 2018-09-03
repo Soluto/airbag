@@ -34,7 +34,7 @@ namespace Airbag
                     options.EndpointOptions = endpointsOptions =>
                                 {
                                     endpointsOptions.MetricsTextEndpointOutputFormatter = new MetricsPrometheusTextOutputFormatter();
-                                    endpointsOptions.MetricsEndpointOutputFormatter = new MetricsPrometheusProtobufOutputFormatter();
+                                    endpointsOptions.MetricsEndpointOutputFormatter = new MetricsPrometheusTextOutputFormatter();
                                 };
                 })
                 .UseStartup<Startup>()
