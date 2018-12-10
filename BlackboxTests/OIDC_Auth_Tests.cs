@@ -67,7 +67,7 @@ namespace BlackboxTests
 
         [Fact]
         public async Task
-            RequestWithoutAuthorizationHeader_RouteIsNotWhitelistedButContainsPartialWildcard_Return4035Forbidden()
+            RequestWithoutAuthorizationHeader_RouteIsNotWhitelistedButContainsPartialWildcard_Return403Forbidden()
         {
             var result = await new HttpClient().GetAsync(AirbagUrl + "api/foo/bar");
             Assert.Equal(HttpStatusCode.Forbidden, result.StatusCode);
