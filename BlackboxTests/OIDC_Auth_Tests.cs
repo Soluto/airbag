@@ -12,6 +12,7 @@ namespace BlackboxTests
     public class OidcAuthTests
     {
         private static TokenClient _validTokenClient;
+        private static TokenClient _anotherValidTokenClient;
         private static TokenClient _differentIssuerTokenClient;
         private static TokenClient _otherSignatureTokenClient;
         private const string AirbagUrl = "http://localhost:5001/";
@@ -20,6 +21,9 @@ namespace BlackboxTests
         {
             var validDiscovery = DiscoveryClient.GetAsync("http://localhost:5002").Result;
             _validTokenClient = new TokenClient(validDiscovery.TokenEndpoint, "client", "secret");
+            
+            var anotherValidDiscovery = DiscoveryClient.GetAsync("http://localhost:5003").Result;
+            _anotherValidTokenClient = new TokenClient(anotherValidDiscovery.TokenEndpoint, "client", "secret");
 
             var otherIssuerDiscovery = DiscoveryClient.GetAsync("http://localhost:5004").Result;
             _differentIssuerTokenClient = new TokenClient(otherIssuerDiscovery.TokenEndpoint, "client", "secret");
@@ -32,6 +36,15 @@ namespace BlackboxTests
         public async Task RequestWithValidToken_ForwardRequestToBackendContainer()
         {
             var tokenResponse = await _validTokenClient.RequestClientCredentialsAsync("api1");
+       
+            var result = await SendRequest(tokenResponse.AccessToken);
+            Assert.Equal(HttpStatusCode.OK, result.StatusCode);
+        }
+        
+        [Fact]
+        public async Task RequestWithValidTokenFromAnotherProvider_ForwardRequestToBackendContainer()
+        {
+            var tokenResponse = await _anotherValidTokenClient.RequestClientCredentialsAsync("api1");
 
             var result = await SendRequest(tokenResponse.AccessToken);
             Assert.Equal(HttpStatusCode.OK, result.StatusCode);
@@ -54,7 +67,7 @@ namespace BlackboxTests
 
         [Fact]
         public async Task
-            RequestWithoutAuthorizationHeader_RouteIsNotWhitelistedButContainsPartialWildcard_Return403Forbidden()
+            RequestWithoutAuthorizationHeader_RouteIsNotWhitelistedButContainsPartialWildcard_Return4035Forbidden()
         {
             var result = await new HttpClient().GetAsync(AirbagUrl + "api/foo/bar");
             Assert.Equal(HttpStatusCode.Forbidden, result.StatusCode);

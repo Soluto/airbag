@@ -1,6 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
+using System.Linq;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
@@ -18,23 +18,42 @@ namespace Airbag
             _configuration = configuration;
         }
 
+        private IEnumerable<Provider> GetProviders()
+        {
+            var issuers = _configuration.GetValue<string>("ISSUER").Split(',');
+            var audiences = _configuration.GetValue<string>("AUDIENCE").Split(',');
+            var authorities = _configuration.GetValue<string>("AUTHORITY").Split(',');
+
+            return issuers.Select((issuer, index) => new Provider
+            {
+                Issuer = issuer,
+                Audience = audiences[index],
+                Authority = authorities[index],
+                Name = issuer
+            });
+        }
+
         public void ConfigureServices(IServiceCollection services)
         {
-            var isDevEnv = string.Equals(_configuration.GetValue<string>("ASPNETCORE_ENVIRONMENT"), "Development", StringComparison.OrdinalIgnoreCase);
+            var isDevEnv = string.Equals(_configuration.GetValue<string>("ASPNETCORE_ENVIRONMENT"), "Development",
+                StringComparison.OrdinalIgnoreCase);
 
             services.AddCors();
 
-            services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
-                    .AddJwtBearer(options =>
+            var authenticationBuilder = services.AddAuthentication();
+
+            foreach (var provider in GetProviders())
+            {
+                authenticationBuilder.AddJwtBearer(provider.Name, options =>
                 {
                     options.TokenValidationParameters = new TokenValidationParameters
                     {
-                        ValidIssuer = _configuration.GetValue<string>("ISSUER"),
-                        ValidAudience = _configuration.GetValue<string>("AUDIENCE"),
+                        ValidIssuer = provider.Issuer,
+                        ValidAudience = provider.Audience,
                         ValidateLifetime = true
                     };
 
-                    options.Authority = _configuration.GetValue<string>("AUTHORITY");
+                    options.Authority = provider.Authority;
 
                     // for testing
                     if (isDevEnv)
@@ -43,6 +62,7 @@ namespace Airbag
                         options.RequireHttpsMetadata = false;
                     }
                 });
+            }
         }
 
         public void Configure(IApplicationBuilder app, IHostingEnvironment env)
@@ -53,8 +73,8 @@ namespace Airbag
             }
 
             app.UseCors(builder => builder.AllowAnyOrigin()
-                                          .AllowAnyMethod()
-                                          .AllowAnyHeader());
+                .AllowAnyMethod()
+                .AllowAnyHeader());
 
             app.UseAuthentication();
 
@@ -66,7 +86,7 @@ namespace Airbag
                 unauthenticatedRoutes = unauthenticatedConfig.Split(',');
             }
 
-            app.UseAuthenticatedRoutes(unauthenticatedRoutes);
+            app.UseAuthenticatedRoutes(unauthenticatedRoutes, GetProviders().Select(provider => provider.Name));
 
             app.RunProxy(new ProxyOptions
             {
