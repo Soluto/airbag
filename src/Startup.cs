@@ -20,17 +20,38 @@ namespace Airbag
 
         private IEnumerable<Provider> GetProviders()
         {
-            var issuers = _configuration.GetValue<string>("ISSUER").Split(',');
-            var audiences = _configuration.GetValue<string>("AUDIENCE").Split(',');
-            var authorities = _configuration.GetValue<string>("AUTHORITY").Split(',');
-
-            return issuers.Select((issuer, index) => new Provider
+            var defaultProvider = new Provider
             {
-                Issuer = issuer,
-                Audience = audiences[index],
-                Authority = authorities[index],
-                Name = issuer
-            });
+                Issuer =  _configuration.GetValue<string>("ISSUER"),
+                Audience =  _configuration.GetValue<string>("AUDIENCE"),
+                Authority = _configuration.GetValue<string>("AUTHORITY"),
+                Name = "DEFAULT"
+            };
+
+            var providers = _configuration.AsEnumerable()
+                .Select(pair => pair.Key)
+                .Where(key => key.StartsWith("ISSUER_") || key.StartsWith("AUDIENCE_") || key.StartsWith("AUTHORITY_"))
+                .GroupBy(key => string.Join("_", key.Split('_').Skip(1)))
+                .Select(grouping => new Provider
+                {
+                    Name = grouping.Key,
+                    Issuer = _configuration.GetValue<string>("ISSUER_" + grouping.Key),
+                    Audience = _configuration.GetValue<string>("AUDIENCE_" + grouping.Key),
+                    Authority = _configuration.GetValue<string>("AUTHORITY_" + grouping.Key)
+                })
+                .ToList();
+
+            if (!defaultProvider.IsEmpty())
+            {
+                providers.Add(defaultProvider);
+            }
+            
+            if (providers.Any(provider => provider.IsInvalid()))
+            {
+                throw new Exception("Invalid auth provider configuration");
+            }
+
+            return providers;
         }
 
         public void ConfigureServices(IServiceCollection services)

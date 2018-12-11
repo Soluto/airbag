@@ -9,9 +9,12 @@ services:
     - protected_api
     environment:
     - ASPNETCORE_ENVIRONMENT=Development
-    - AUTHORITY=http://valid_auth_server,http://another_valid_auth_server
-    - ISSUER=http://localhost:5002,http://localhost:5003
-    - AUDIENCE=api1,api1
+    - AUTHORITY=http://valid_auth_server
+    - ISSUER=http://localhost:5002
+    - AUDIENCE=api1
+    - AUTHORITY_ANOTHER=http://another_valid_auth_server
+    - ISSUER_ANOTHER=http://localhost:5003
+    - AUDIENCE_ANOTHER=api1
     - BACKEND_HOST_NAME=protected_api
     - BACKEND_SERVICE_PORT=8080
     - COLLECT_METRICS=false
