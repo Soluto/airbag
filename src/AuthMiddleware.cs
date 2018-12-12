@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
@@ -16,9 +17,20 @@ namespace Airbag
 
         private static async Task<bool> IsAuthenticated(HttpContext ctx, IEnumerable<string> authSchemas)
         {
-            var results = await Task.WhenAll(authSchemas.Select(ctx.AuthenticateAsync));
+            var results = await Task.WhenAll(authSchemas.Select(async schema =>
+            {
+                try
+                {
+                    return await ctx.AuthenticateAsync(schema);
+                }
+                catch (Exception e)
+                {
+                    Console.WriteLine($"Failed to authenticate with this error: {e.Message}");
+                    return null;
+                }
+            }));
 
-            var user = results.FirstOrDefault(res => res.Succeeded)?.Principal;
+            var user = results.FirstOrDefault(res => res != null && res.Succeeded)?.Principal;
             
             return user != null;
         }
