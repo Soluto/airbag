@@ -20,3 +20,20 @@ example: `/isAlive,/health,/something/anonymous`
 If a route contains a wildcard ( * ) then all matching routes will not be authenticated (For example - `/swagger/*` will cause all routes which start with `/swagger/` to be unauthenticated.   
 * **COLLECT_METRICS** - Enable or disable metrics collection. Metrics are collected using [AppMetrics](https://github.com/AppMetrics/AppMetrics)
 
+### Using with multiple auth providers
+To use multiple auth providers, provide these parmaters for every provider as a prefix:
+* **AUTHORITY_{{providerName}}**
+* **AUDIENCE_{{providerName}}**
+* **ISSUER_{{providerName}}**
+
+#### Example
+```yaml
+# Foo provider parameters
+- AUTHORITY_FOO=http://foo_auth_server
+- ISSUER_FOO=http://foo
+- AUDIENCE_FOO=foo_api
+# Bar provider parameters
+- AUTHORITY_BAR=http://bar_auth_server
+- ISSUER_BAR=http://bar
+- AUDIENCE_BAR=bar_api
+```

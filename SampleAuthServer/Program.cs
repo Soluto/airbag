@@ -10,7 +10,7 @@ namespace SampleAuthServer
             BuildWebHost(args).Run();
         }
 
-        public static IWebHost BuildWebHost(string[] args) =>
+        private static IWebHost BuildWebHost(string[] args) =>
             WebHost.CreateDefaultBuilder(args)
                 .UseStartup<Startup>()
                 .Build();

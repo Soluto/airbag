@@ -1,6 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
+using System.Linq;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
@@ -18,23 +18,63 @@ namespace Airbag
             _configuration = configuration;
         }
 
+        private IEnumerable<Provider> GetProviders()
+        {
+            var defaultProvider = new Provider
+            {
+                Issuer =  _configuration.GetValue<string>("ISSUER"),
+                Audience =  _configuration.GetValue<string>("AUDIENCE"),
+                Authority = _configuration.GetValue<string>("AUTHORITY"),
+                Name = "DEFAULT"
+            };
+
+            var providers = _configuration.AsEnumerable()
+                .Select(pair => pair.Key)
+                .Where(key => key.StartsWith("ISSUER_") || key.StartsWith("AUDIENCE_") || key.StartsWith("AUTHORITY_"))
+                .GroupBy(key => string.Join("_", key.Split('_').Skip(1)))
+                .Select(grouping => new Provider
+                {
+                    Name = grouping.Key,
+                    Issuer = _configuration.GetValue<string>("ISSUER_" + grouping.Key),
+                    Audience = _configuration.GetValue<string>("AUDIENCE_" + grouping.Key),
+                    Authority = _configuration.GetValue<string>("AUTHORITY_" + grouping.Key)
+                })
+                .ToList();
+
+            if (!defaultProvider.IsEmpty())
+            {
+                providers.Add(defaultProvider);
+            }
+            
+            if (providers.Any(provider => provider.IsInvalid()))
+            {
+                throw new Exception("Invalid auth provider configuration");
+            }
+
+            return providers;
+        }
+
         public void ConfigureServices(IServiceCollection services)
         {
-            var isDevEnv = string.Equals(_configuration.GetValue<string>("ASPNETCORE_ENVIRONMENT"), "Development", StringComparison.OrdinalIgnoreCase);
+            var isDevEnv = string.Equals(_configuration.GetValue<string>("ASPNETCORE_ENVIRONMENT"), "Development",
+                StringComparison.OrdinalIgnoreCase);
 
             services.AddCors();
 
-            services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
-                    .AddJwtBearer(options =>
+            var authenticationBuilder = services.AddAuthentication();
+
+            foreach (var provider in GetProviders())
+            {
+                authenticationBuilder.AddJwtBearer(provider.Name, options =>
                 {
                     options.TokenValidationParameters = new TokenValidationParameters
                     {
-                        ValidIssuer = _configuration.GetValue<string>("ISSUER"),
-                        ValidAudience = _configuration.GetValue<string>("AUDIENCE"),
+                        ValidIssuer = provider.Issuer,
+                        ValidAudience = provider.Audience,
                         ValidateLifetime = true
                     };
 
-                    options.Authority = _configuration.GetValue<string>("AUTHORITY");
+                    options.Authority = provider.Authority;
 
                     // for testing
                     if (isDevEnv)
@@ -43,6 +83,7 @@ namespace Airbag
                         options.RequireHttpsMetadata = false;
                     }
                 });
+            }
         }
 
         public void Configure(IApplicationBuilder app, IHostingEnvironment env)
@@ -53,8 +94,8 @@ namespace Airbag
             }
 
             app.UseCors(builder => builder.AllowAnyOrigin()
-                                          .AllowAnyMethod()
-                                          .AllowAnyHeader());
+                .AllowAnyMethod()
+                .AllowAnyHeader());
 
             app.UseAuthentication();
 
@@ -66,7 +107,7 @@ namespace Airbag
                 unauthenticatedRoutes = unauthenticatedConfig.Split(',');
             }
 
-            app.UseAuthenticatedRoutes(unauthenticatedRoutes);
+            app.UseAuthenticatedRoutes(unauthenticatedRoutes, GetProviders().Select(provider => provider.Name));
 
             app.RunProxy(new ProxyOptions
             {

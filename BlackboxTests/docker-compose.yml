@@ -1,47 +1,58 @@
 version: '3'
 
 services:
-   airbag:
-     build: ../src
-     depends_on:
-      - valid_auth_server
-      - auth_server_with_different_issuer      
-      - protected_api
-     environment:
-       - ASPNETCORE_ENVIRONMENT=Development
-       - AUTHORITY=http://valid_auth_server
-       - ISSUER=http://localhost:5002
-       - AUDIENCE=api1
-       - BACKEND_HOST_NAME=protected_api
-       - BACKEND_SERVICE_PORT=8080
-       - COLLECT_METRICS=false
-       - UNAUTHENTICATED_ROUTES=/isAlive,/foo*
-     ports:
-       - "5001:80" 
+  airbag:
+    build: ../src
+    depends_on:
+    - valid_auth_server
+    - auth_server_with_different_issuer
+    - protected_api
+    environment:
+    - ASPNETCORE_ENVIRONMENT=Development
+    - AUTHORITY=http://valid_auth_server
+    - ISSUER=http://localhost:5002
+    - AUDIENCE=api1
+    - AUTHORITY_ANOTHER=http://another_valid_auth_server
+    - ISSUER_ANOTHER=http://localhost:5003
+    - AUDIENCE_ANOTHER=api1
+    - BACKEND_HOST_NAME=protected_api
+    - BACKEND_SERVICE_PORT=8080
+    - COLLECT_METRICS=false
+    - UNAUTHENTICATED_ROUTES=/isAlive,/foo*
+    ports:
+    - "5001:80"
 
-   valid_auth_server:
-     build: ../SampleAuthServer
-     ports:
-       - "5002:80"
-     environment:
-       - ASPNETCORE_ENVIRONMENT=Development
-       - ISSUER_URI=http://localhost:5002       
+  valid_auth_server:
+    build: ../SampleAuthServer
+    ports:
+    - "5002:80"
+    environment:
+    - ASPNETCORE_ENVIRONMENT=Development
+    - ISSUER_URI=http://localhost:5002
 
-   auth_server_with_different_issuer:
-     build: ../SampleAuthServer
-     ports:
-       - "5004:80"
-     environment:
-       - ASPNETCORE_ENVIRONMENT=Development
-       - ISSUER_URI=http://someuri.com:1234
+  another_valid_auth_server:
+    build: ../SampleAuthServer
+    ports:
+    - "5003:80"
+    environment:
+    - ASPNETCORE_ENVIRONMENT=Development
+    - ISSUER_URI=http://localhost:5003
 
-   auth_server_with_different_signature:
-     build: ../SampleAuthServer
-     ports:
-       - "5005:80"
-     environment:
-       - ASPNETCORE_ENVIRONMENT=Development
-       - ISSUER_URI=http://localhost:5002
+  auth_server_with_different_issuer:
+    build: ../SampleAuthServer
+    ports:
+    - "5004:80"
+    environment:
+    - ASPNETCORE_ENVIRONMENT=Development
+    - ISSUER_URI=http://someuri.com:1234
 
-   protected_api:
-     image: jmalloc/echo-server
+  auth_server_with_different_signature:
+    build: ../SampleAuthServer
+    ports:
+    - "5005:80"
+    environment:
+    - ASPNETCORE_ENVIRONMENT=Development
+    - ISSUER_URI=http://localhost:5002
+
+  protected_api:
+    image: jmalloc/echo-server
