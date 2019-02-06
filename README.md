@@ -6,7 +6,7 @@ airbag is a tiny sidecar for your docker containers, meant to handle jwt authent
 ## How to use it
 1. Deploy airbag next to your container (In kubernetes, you would usually put them in the same pod).  
 2. Configure airbag's BACKEND_HOST_NAME (If airbag and your container are in the same pod, set this to localhost) and BACKEND_SERVICE_PORT (the port your service is listening on). 
-3. Route traffic directed for your container to airbag 
+3. Route traffic directed to your container to airbag 
 
 ## Configuration
 airbag uses environment variables for configuration, and supports the following options:
