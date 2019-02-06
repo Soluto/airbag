@@ -5,6 +5,7 @@ airbag is a tiny sidecar for your docker containers, meant to handle jwt authent
 
 ## How to use it
 1. Deploy airbag next to your container (In kubernetes, you would usually put them in the same pod).  
+   airbag's image can be found at https://hub.docker.com/r/soluto/airbag/
 2. Configure airbag's BACKEND_HOST_NAME (If airbag and your container are in the same pod, set this to localhost) and BACKEND_SERVICE_PORT (the port your service is listening on). 
 3. Route traffic directed to your container to airbag 
 
