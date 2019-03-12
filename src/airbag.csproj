@@ -9,8 +9,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="App.Metrics.AspNetCore" Version="2.0.0-preview1" />
-    <PackageReference Include="App.Metrics.Formatters.Prometheus" Version="2.0.0-preview1" />
+    <PackageReference Include="App.Metrics.AspNetCore" Version="3.0.0" />
+    <PackageReference Include="App.Metrics.Formatters.Prometheus" Version="3.0.0" />
     <PackageReference Include="Microsoft.AspNetCore.All" Version="2.0.9" />
     <PackageReference Include="Microsoft.AspNetCore.Proxy" Version="0.2.0" />
   </ItemGroup>
