@@ -88,7 +88,7 @@ namespace BlackboxTests
             arr[20] = 'g';
             var temperedToken = arr.ToString();
 
-            HttpResponseMessage result = await SendRequest(temperedToken);
+            var result = await SendRequest(temperedToken);
             Assert.Equal(HttpStatusCode.Forbidden, result.StatusCode);
         }
 
@@ -112,7 +112,7 @@ namespace BlackboxTests
         }
 
         [Fact]
-        public async Task RequestWithWrongAudeince_Return403Forbidden()
+        public async Task RequestWithWrongAudience_Return403Forbidden()
         {
             var tokenResponse = await _differentIssuerTokenClient.RequestClientCredentialsAsync("api2");
 
