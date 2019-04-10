@@ -39,9 +39,16 @@ namespace Airbag
         {
             app.Use(async (ctx, next) =>
             {
-                if (!await IsAuthenticated(ctx, authSchemas) && !IsWhitelisted(ctx, whitelistedRoutes))
+                if (IsWhitelisted(ctx, whitelistedRoutes))
+                {
+                    await next();
+                    return;
+                }
+                
+                if (!await IsAuthenticated(ctx, authSchemas))
                 {
                     ctx.Response.StatusCode = 403;
+                    Console.WriteLine("Failed to authenticate");
                     return;
                 }
 
