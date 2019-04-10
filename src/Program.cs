@@ -3,6 +3,7 @@ using App.Metrics.Formatters.Prometheus;
 using Microsoft.AspNetCore;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 
 namespace Airbag
 {
@@ -19,23 +20,28 @@ namespace Airbag
 
         private static IWebHost BuildWebHost(string[] args) =>
             WebHost.CreateDefaultBuilder(args)
-             .UseConfiguration(_configuration)
-             .ConfigureMetricsWithDefaults(
-                builder =>
+                .UseConfiguration(_configuration)
+                .ConfigureMetricsWithDefaults(
+                    builder =>
+                    {
+                        builder.Configuration.Configure(
+                            options => { options.Enabled = _configuration.GetValue<bool>("COLLECT_METRICS"); });
+                    })
+                .ConfigureLogging(builder =>
                 {
-                    builder.Configuration.Configure(
-                        options =>
-                        {
-                            options.Enabled = _configuration.GetValue<bool>("COLLECT_METRICS");
-                        });
+                    builder.ClearProviders();
+                    builder.AddConsole();
+                    builder.AddFilter("Microsoft.AspNetCore.Authentication.JwtBearer.JwtBearerHandler",
+                        LogLevel.Warning);
                 })
                 .UseMetrics(options =>
                 {
                     options.EndpointOptions = endpointsOptions =>
-                                {
-                                    endpointsOptions.MetricsTextEndpointOutputFormatter = new MetricsPrometheusTextOutputFormatter();
-                                    endpointsOptions.MetricsEndpointOutputFormatter = new MetricsPrometheusTextOutputFormatter();
-                                };
+                    {
+                        endpointsOptions.MetricsTextEndpointOutputFormatter =
+                            new MetricsPrometheusTextOutputFormatter();
+                        endpointsOptions.MetricsEndpointOutputFormatter = new MetricsPrometheusTextOutputFormatter();
+                    };
                 })
                 .UseStartup<Startup>()
                 .Build();

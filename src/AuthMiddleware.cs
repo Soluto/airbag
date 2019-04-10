@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.Claims;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authentication;
@@ -21,11 +22,10 @@ namespace Airbag
             {
                 try
                 {
-                    return await ctx.AuthenticateAsync(schema);
+                   return await ctx.AuthenticateAsync(schema);
                 }
-                catch (Exception e)
+                catch
                 {
-                    Console.WriteLine($"Failed to authenticate with this error: {e.Message}");
                     return null;
                 }
             }));
@@ -39,9 +39,16 @@ namespace Airbag
         {
             app.Use(async (ctx, next) =>
             {
-                if (!await IsAuthenticated(ctx, authSchemas) && !IsWhitelisted(ctx, whitelistedRoutes))
+                if (IsWhitelisted(ctx, whitelistedRoutes))
+                {
+                    await next();
+                    return;
+                }
+                
+                if (!await IsAuthenticated(ctx, authSchemas))
                 {
                     ctx.Response.StatusCode = 403;
+                    Console.WriteLine("Failed to authenticate");
                     return;
                 }
 
