@@ -20,13 +20,18 @@ namespace Airbag
 
         private static IWebHost BuildWebHost(string[] args) =>
             WebHost.CreateDefaultBuilder(args)
+                .UseMetrics()
                 .UseConfiguration(_configuration)
                 .ConfigureMetricsWithDefaults(
                     builder =>
                     {
                         builder.Configuration.Configure(
-                            options => { options.Enabled = _configuration.GetValue<bool>("COLLECT_METRICS"); });
+                            options =>
+                            {
+                                options.Enabled = _configuration.GetValue<bool>("COLLECT_METRICS");
+                            });
                     })
+                .ConfigureAppMetricsHostingConfiguration(options => { options.MetricsEndpoint = "/airbag/metrics"; })
                 .ConfigureLogging(builder =>
                 {
                     builder.ClearProviders();
