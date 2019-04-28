@@ -20,7 +20,6 @@ namespace Airbag
 
         private static IWebHost BuildWebHost(string[] args) =>
             WebHost.CreateDefaultBuilder(args)
-                .UseMetrics()
                 .UseConfiguration(_configuration)
                 .ConfigureMetricsWithDefaults(
                     builder =>
