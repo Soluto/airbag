@@ -100,12 +100,11 @@ namespace Airbag
             app.UseAuthentication();
 
             var unauthenticatedConfig = _configuration.GetValue<string>("UNAUTHENTICATED_ROUTES");
-            
-            IEnumerable<string> unauthenticatedRoutes = new List<string>() { "/metrics" };
+            IEnumerable<string> unauthenticatedRoutes = new List<string>();
 
             if (unauthenticatedConfig != null)
             {
-                unauthenticatedRoutes = unauthenticatedRoutes.Concat(unauthenticatedConfig.Split(','));
+                unauthenticatedRoutes = unauthenticatedConfig.Split(',');
             }
 
             app.UseAuthenticatedRoutes(unauthenticatedRoutes, GetProviders().Select(provider => provider.Name));
