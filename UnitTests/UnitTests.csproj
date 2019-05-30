@@ -22,7 +22,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\src\Airbag.csproj" />
+    <ProjectReference Include="..\src\airbag.csproj" />
   </ItemGroup>
 
   <ItemGroup>
