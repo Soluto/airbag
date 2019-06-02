@@ -15,4 +15,5 @@ RUN addgroup dotnet && adduser -D -G dotnet -h /home/dotnet dotnet
 USER dotnet
 WORKDIR /home/dotnet/app
 COPY --from=build-env /app/out .
+ENV ASPNETCORE_URLS=http://+:5001
 ENTRYPOINT ["dotnet", "airbag.dll"]
