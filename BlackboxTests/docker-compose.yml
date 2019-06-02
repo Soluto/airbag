@@ -24,7 +24,7 @@ services:
     - OPA_MODE=Enabled
     - OPA_URL=http://opa:8181
     ports:
-    - "5001:80"
+    - "5001:5001"
 
   valid_auth_server:
     build: ../SampleAuthServer

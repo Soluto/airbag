@@ -1,3 +1,3 @@
-package protected_api.allow
+package protected_api
 
 default allow=true
