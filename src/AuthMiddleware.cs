@@ -31,6 +31,8 @@ namespace Airbag
             }));
 
             var user = results.FirstOrDefault(res => res != null && res.Succeeded)?.Principal;
+
+            ctx.Request.HttpContext.User = user;
             
             return user != null;
         }

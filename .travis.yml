@@ -1,12 +1,10 @@
 language: csharp
 mono: none
-dotnet: 2.1
-
-install: 
-  - cd src && dotnet restore
+dotnet: 2.2
 
 before_script:
-  - cd ../BlackboxTests && docker-compose up -d
+  - dotnet test UnitTests/
+  - cd BlackboxTests && docker-compose up -d
 
 script:
   - dotnet test
