@@ -1,11 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using Airbag.OpenPolicyAgent;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.IdentityModel.Tokens;
+using RestEase;
 
 namespace Airbag
 {
@@ -22,8 +24,8 @@ namespace Airbag
         {
             var defaultProvider = new Provider
             {
-                Issuer =  _configuration.GetValue<string>("ISSUER"),
-                Audience =  _configuration.GetValue<string>("AUDIENCE"),
+                Issuer = _configuration.GetValue<string>("ISSUER"),
+                Audience = _configuration.GetValue<string>("AUDIENCE"),
                 Authority = _configuration.GetValue<string>("AUTHORITY"),
                 Name = "DEFAULT"
             };
@@ -83,6 +85,8 @@ namespace Airbag
                         options.RequireHttpsMetadata = false;
                     }
                 });
+
+                services.AddSingleton(s => RestClient.For<IOpenPolicyAgent>(_configuration.GetValue<string>("OPA_URL", "http://localhost:8181")));
             }
         }
 
@@ -102,12 +106,33 @@ namespace Airbag
             var unauthenticatedConfig = _configuration.GetValue<string>("UNAUTHENTICATED_ROUTES");
             IEnumerable<string> unauthenticatedRoutes = new List<string>();
 
+            var opaModeRaw = _configuration.GetValue("OPA_MODE", "Disabled");
+            OpenPolicyAgentAuthorizationMiddlewareConfiguration.AuthorizationMode opaMode;
+
+            if (!Enum.TryParse(
+                opaModeRaw,
+                out opaMode)) {
+                throw new Exception($"Invalid opa mode provided {opaModeRaw}");
+            }
+
+            var opaQuery = _configuration.GetValue("OPA_QUERY_PATH", string.Empty);
+            var validateRoutes = _configuration.GetValue("AUTHORIZED_ROUTES_ENABLED", true);
+
             if (unauthenticatedConfig != null)
             {
                 unauthenticatedRoutes = unauthenticatedConfig.Split(',');
             }
 
-            app.UseAuthenticatedRoutes(unauthenticatedRoutes, GetProviders().Select(provider => provider.Name));
+            if (validateRoutes)
+            {
+                app.UseAuthenticatedRoutes(unauthenticatedRoutes, GetProviders().Select(provider => provider.Name));
+            }
+
+            app.UseMiddleware<OpenPolicyAgentAuthorizationMiddleware>(
+                new OpenPolicyAgentAuthorizationMiddlewareConfiguration { 
+                    Mode = opaMode,
+                    QueryPath = opaQuery
+                });
 
             app.RunProxy(new ProxyOptions
             {
