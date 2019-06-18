@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Security.Claims;
 using System.Threading.Tasks;
 using System.Linq;
@@ -115,6 +116,33 @@ namespace Airbag.UnitTests.OpenPolicyAgent
             mConfiguration.Mode = mode;
             mOpenPolicyAgent.Setup(x => x.Query(mConfiguration.QueryPath, It.IsAny<OpenPolicyAgentQueryRequest>()))
                 .Returns(Task.FromResult(new OpenPolicyAgentQueryResponse { Result = opaReturnValue }));
+
+            await mTarget.InvokeAsync(mHttpContext);
+
+            Assert.Equal(expectedStatusCode, mHttpContext.Response.StatusCode);
+        }
+        
+        [Theory]
+        [InlineData(
+            OpenPolicyAgentAuthorizationMiddlewareConfiguration.AuthorizationMode.Enabled,
+            403)]
+        [InlineData(
+            OpenPolicyAgentAuthorizationMiddlewareConfiguration.AuthorizationMode.Enabled,
+            403)]
+        [InlineData(
+            OpenPolicyAgentAuthorizationMiddlewareConfiguration.AuthorizationMode.LogOnly,
+            200)]
+        [InlineData(
+            OpenPolicyAgentAuthorizationMiddlewareConfiguration.AuthorizationMode.LogOnly,
+            200)]
+        public async Task InvokeAsync_OpaRequestFailed_FailureHandled(
+            OpenPolicyAgentAuthorizationMiddlewareConfiguration.AuthorizationMode mode,
+            int expectedStatusCode)
+        {
+            mConfiguration.Mode = mode;
+            var exception = new Exception("");
+            mOpenPolicyAgent.Setup(x => x.Query(mConfiguration.QueryPath, It.IsAny<OpenPolicyAgentQueryRequest>()))
+                .Throws(exception);
 
             await mTarget.InvokeAsync(mHttpContext);
 
