@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Security.Claims;
 using System.Threading.Tasks;
 using System.Linq;
+using System.Net;
+using System.Net.Http;
 using Airbag.OpenPolicyAgent;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Primitives;
@@ -10,6 +12,7 @@ using Moq;
 using Xunit;
 using Microsoft.AspNetCore.Http.Internal;
 using Microsoft.Extensions.Logging;
+using RestEase;
 using static Airbag.OpenPolicyAgent.OpenPolicyAgentAuthorizationMiddlewareConfiguration;
 
 namespace Airbag.UnitTests.OpenPolicyAgent
@@ -111,14 +114,33 @@ namespace Airbag.UnitTests.OpenPolicyAgent
         }
 
         [Theory]
-        [InlineData(AuthorizationMode.Enabled, 403)]
+        [InlineData(AuthorizationMode.Enabled, 500)]
         [InlineData(AuthorizationMode.LogOnly, 200)]
-        public async Task InvokeAsync_OpaRequestFailed_FailureHandled(
+        public async Task InvokeAsync_OpaRequestFailure_FailureHandled(
             AuthorizationMode mode,
             int expectedStatusCode)
         {
             mConfiguration.Mode = mode;
             var exception = new Exception("");
+            mOpenPolicyAgent.Setup(x => x.Query(mConfiguration.QueryPath, It.IsAny<OpenPolicyAgentQueryRequest>()))
+                .Throws(exception);
+
+            await mTarget.InvokeAsync(mHttpContext);
+
+            Assert.Equal(expectedStatusCode, mHttpContext.Response.StatusCode);
+        }
+
+        [Theory]
+        [InlineData(HttpStatusCode.InternalServerError, AuthorizationMode.Enabled, 500)]
+        [InlineData(HttpStatusCode.NotFound, AuthorizationMode.LogOnly, 200)]
+        public async Task InvokeAsync_OpaRequestHttpFailure_FailureHandled(
+            HttpStatusCode opaStatusCode,
+            AuthorizationMode mode,
+            int expectedStatusCode)
+        {
+            mConfiguration.Mode = mode;
+            var exception = new ApiException(new HttpRequestMessage(),
+                new HttpResponseMessage {StatusCode = opaStatusCode}, "");
             mOpenPolicyAgent.Setup(x => x.Query(mConfiguration.QueryPath, It.IsAny<OpenPolicyAgentQueryRequest>()))
                 .Throws(exception);
 

@@ -1,9 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
+using RestEase;
 using static Airbag.OpenPolicyAgent.OpenPolicyAgentAuthorizationMiddlewareConfiguration;
 
 namespace Airbag.OpenPolicyAgent
@@ -40,23 +42,25 @@ namespace Airbag.OpenPolicyAgent
             var request = BuildRequest(context);
             var response = await ExecuteQuery(mConfiguration.QueryPath, request);
 
-            if (ShouldReturn403Forbidden(response))
+            switch (mConfiguration.Mode)
             {
-                context.Response.StatusCode = 403;
-                if (response.DecisionId != null)
-                {
-                    context.Response.Headers["X-Decision-Id"] = response.DecisionId;
-                }
-
-                await context.Response.WriteAsync("Forbidden");
-            }
-            else
-            {
-                await _next(context);
+                case AuthorizationMode.Disabled:
+                case AuthorizationMode.LogOnly:
+                case AuthorizationMode.Enabled when response == OpaQueryResult.Allowed:
+                    await _next(context);
+                    break;
+                case AuthorizationMode.Enabled when response == OpaQueryResult.CriticalError:
+                    context.Response.StatusCode = 500;
+                    await context.Response.WriteAsync("Internal Server Error");
+                    break;
+                case AuthorizationMode.Enabled:
+                    context.Response.StatusCode = 403;
+                    await context.Response.WriteAsync("Forbidden");
+                    break;
             }
         }
 
-        private async Task<OpenPolicyAgentQueryResponse> ExecuteQuery(string path, OpenPolicyAgentQueryRequest query)
+        private async Task<OpaQueryResult> ExecuteQuery(string path, OpenPolicyAgentQueryRequest query)
         {
             try
             {
@@ -65,16 +69,21 @@ namespace Airbag.OpenPolicyAgent
                 mLogger.LogInformation("OPA returned {result}, decision id: {decisionId}", response.Result,
                     response.DecisionId);
 
-                return response;
+                return response.Result == null ? OpaQueryResult.Unknown
+                    : response.Result.Value ? OpaQueryResult.Allowed
+                    : OpaQueryResult.Denied;
+            }
+            catch (ApiException ex) when ((int) ex.StatusCode >= 400 && (int) ex.StatusCode < 500)
+            {
+                mLogger.LogError(ex, "HTTP error while invoking OPA");
+                
+                return OpaQueryResult.Error;
             }
             catch (Exception ex)
             {
-                mLogger.LogError(ex, "Error while invoking OPA");
+                mLogger.LogError(ex, "Critical error while invoking OPA");
 
-                return new OpenPolicyAgentQueryResponse
-                {
-                    Result = null
-                };
+                return OpaQueryResult.CriticalError;
             }
         }
 
@@ -98,21 +107,14 @@ namespace Airbag.OpenPolicyAgent
                 }
             };
         }
+    }
 
-        private bool ShouldReturn403Forbidden(OpenPolicyAgentQueryResponse response = null)
-        {
-            switch (mConfiguration.Mode)
-            {
-                case AuthorizationMode.Disabled:
-                case AuthorizationMode.LogOnly:
-                    return false;
-                case AuthorizationMode.Enabled when response == null:
-                    return true;
-                case AuthorizationMode.Enabled:
-                    return !response.Result.HasValue || response.Result.Value == false;
-                default:
-                    throw new ArgumentOutOfRangeException("This should never happen");
-            }
-        }
+    internal enum OpaQueryResult
+    {
+        Allowed,
+        Denied,
+        Error,
+        CriticalError,
+        Unknown
     }
 }
