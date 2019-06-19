@@ -49,7 +49,7 @@ namespace Airbag.OpenPolicyAgent
                 case AuthorizationMode.Enabled when response == OpaQueryResult.Allowed:
                     await _next(context);
                     break;
-                case AuthorizationMode.Enabled when response == OpaQueryResult.CriticalError:
+                case AuthorizationMode.Enabled when response == OpaQueryResult.UnknownError:
                     context.Response.StatusCode = 500;
                     await context.Response.WriteAsync("Internal Server Error");
                     break;
@@ -77,13 +77,13 @@ namespace Airbag.OpenPolicyAgent
             {
                 mLogger.LogError(ex, "HTTP error while invoking OPA");
                 
-                return OpaQueryResult.Error;
+                return OpaQueryResult.PolicyError;
             }
             catch (Exception ex)
             {
                 mLogger.LogError(ex, "Critical error while invoking OPA");
 
-                return OpaQueryResult.CriticalError;
+                return OpaQueryResult.UnknownError;
             }
         }
 
@@ -113,8 +113,10 @@ namespace Airbag.OpenPolicyAgent
     {
         Allowed,
         Denied,
-        Error,
-        CriticalError,
-        Unknown
+        
+        PolicyError,
+        UnknownError,
+        
+        Unknown,
     }
 }
