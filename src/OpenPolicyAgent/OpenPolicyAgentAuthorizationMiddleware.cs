@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Net;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
@@ -49,7 +48,7 @@ namespace Airbag.OpenPolicyAgent
                 case AuthorizationMode.Enabled when response == OpaQueryResult.Allowed:
                     await _next(context);
                     break;
-                case AuthorizationMode.Enabled when response == OpaQueryResult.UnknownError:
+                case AuthorizationMode.Enabled when response == OpaQueryResult.Error:
                     context.Response.StatusCode = 500;
                     await context.Response.WriteAsync("Internal Server Error");
                     break;
@@ -69,7 +68,7 @@ namespace Airbag.OpenPolicyAgent
                 mLogger.LogInformation("OPA returned {result}, decision id: {decisionId}", response.Result,
                     response.DecisionId);
 
-                return response.Result == null ? OpaQueryResult.Unknown
+                return response.Result == null ? OpaQueryResult.Indeterminate
                     : response.Result.Value ? OpaQueryResult.Allowed
                     : OpaQueryResult.Denied;
             }
@@ -77,13 +76,13 @@ namespace Airbag.OpenPolicyAgent
             {
                 mLogger.LogError(ex, "HTTP error while invoking OPA");
                 
-                return OpaQueryResult.PolicyError;
+                return OpaQueryResult.Indeterminate;
             }
             catch (Exception ex)
             {
                 mLogger.LogError(ex, "Critical error while invoking OPA");
 
-                return OpaQueryResult.UnknownError;
+                return OpaQueryResult.Error;
             }
         }
 
@@ -112,11 +111,8 @@ namespace Airbag.OpenPolicyAgent
     internal enum OpaQueryResult
     {
         Allowed,
+        Indeterminate,
         Denied,
-        
-        PolicyError,
-        UnknownError,
-        
-        Unknown,
+        Error,
     }
 }
