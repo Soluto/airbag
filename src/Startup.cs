@@ -8,6 +8,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.IdentityModel.Tokens;
 using RestEase;
+using static Airbag.OpenPolicyAgent.OpenPolicyAgentAuthorizationMiddlewareConfiguration;
 
 namespace Airbag
 {
@@ -47,7 +48,7 @@ namespace Airbag
             {
                 providers.Add(defaultProvider);
             }
-            
+
             if (providers.Any(provider => provider.IsInvalid()))
             {
                 throw new Exception("Invalid auth provider configuration");
@@ -86,7 +87,9 @@ namespace Airbag
                     }
                 });
 
-                services.AddSingleton(s => RestClient.For<IOpenPolicyAgent>(_configuration.GetValue<string>("OPA_URL", "http://localhost:8181")));
+                services.AddSingleton(s =>
+                    RestClient.For<IOpenPolicyAgent>(
+                        _configuration.GetValue<string>("OPA_URL", "http://localhost:8181")));
             }
         }
 
@@ -107,11 +110,9 @@ namespace Airbag
             IEnumerable<string> unauthenticatedRoutes = new List<string>();
 
             var opaModeRaw = _configuration.GetValue("OPA_MODE", "Disabled");
-            OpenPolicyAgentAuthorizationMiddlewareConfiguration.AuthorizationMode opaMode;
 
-            if (!Enum.TryParse(
-                opaModeRaw,
-                out opaMode)) {
+            if (!Enum.TryParse(opaModeRaw, out AuthorizationMode opaMode))
+            {
                 throw new Exception($"Invalid opa mode provided {opaModeRaw}");
             }
 
@@ -129,7 +130,8 @@ namespace Airbag
             }
 
             app.UseMiddleware<OpenPolicyAgentAuthorizationMiddleware>(
-                new OpenPolicyAgentAuthorizationMiddlewareConfiguration { 
+                new OpenPolicyAgentAuthorizationMiddlewareConfiguration
+                {
                     Mode = opaMode,
                     QueryPath = opaQuery
                 });
