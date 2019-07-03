@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using Airbag.OpenPolicyAgent;
+using Airbag.Utils;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
@@ -63,6 +64,12 @@ namespace Airbag
                 StringComparison.OrdinalIgnoreCase);
 
             services.AddCors();
+            services.AddSingleton(new ProxyOptions
+            {
+                Scheme = "http",
+                Host = _configuration.GetValue("BACKEND_HOST_NAME", "localhost"),
+                Port = _configuration.GetValue("BACKEND_SERVICE_PORT", "80")
+            });
 
             var authenticationBuilder = services.AddAuthentication();
 
@@ -86,11 +93,13 @@ namespace Airbag
                         options.RequireHttpsMetadata = false;
                     }
                 });
-
-                services.AddSingleton(s =>
-                    RestClient.For<IOpenPolicyAgent>(
-                        _configuration.GetValue<string>("OPA_URL", "http://localhost:8181")));
+                
+                services.AddSingleton(provider);
             }
+            
+            services.AddSingleton(s =>
+                RestClient.For<IOpenPolicyAgent>(
+                    _configuration.GetValue("OPA_URL", "http://localhost:8181")));
         }
 
         public void Configure(IApplicationBuilder app, IHostingEnvironment env)
@@ -105,43 +114,10 @@ namespace Airbag
                 .AllowAnyHeader());
 
             app.UseAuthentication();
-
-            var unauthenticatedConfig = _configuration.GetValue<string>("UNAUTHENTICATED_ROUTES");
-            IEnumerable<string> unauthenticatedRoutes = new List<string>();
-
-            var opaModeRaw = _configuration.GetValue("OPA_MODE", "Disabled");
-
-            if (!Enum.TryParse(opaModeRaw, out AuthorizationMode opaMode))
-            {
-                throw new Exception($"Invalid opa mode provided {opaModeRaw}");
-            }
-
-            var opaQuery = _configuration.GetValue("OPA_QUERY_PATH", string.Empty);
-            var validateRoutes = _configuration.GetValue("AUTHORIZED_ROUTES_ENABLED", true);
-
-            if (unauthenticatedConfig != null)
-            {
-                unauthenticatedRoutes = unauthenticatedConfig.Split(',');
-            }
-
-            if (validateRoutes)
-            {
-                app.UseAuthenticatedRoutes(unauthenticatedRoutes, GetProviders().Select(provider => provider.Name));
-            }
-
-            app.UseMiddleware<OpenPolicyAgentAuthorizationMiddleware>(
-                new OpenPolicyAgentAuthorizationMiddlewareConfiguration
-                {
-                    Mode = opaMode,
-                    QueryPath = opaQuery
-                });
-
-            app.RunProxy(new ProxyOptions
-            {
-                Scheme = "http",
-                Host = _configuration.GetValue("BACKEND_HOST_NAME", "localhost"),
-                Port = _configuration.GetValue("BACKEND_SERVICE_PORT", "80")
-            });
+            
+            var unauthenticatedRoutes = _configuration.GetValue("UNAUTHENTICATED_ROUTES", string.Empty).Split(',');
+            app.MapWhen(context => !RouteWhitelistMatcher.IsWhitelisted(context, unauthenticatedRoutes), Middlewares.UseAirbag);
+            app.RunProxy(app.ApplicationServices.GetRequiredService<ProxyOptions>());
         }
     }
 }
