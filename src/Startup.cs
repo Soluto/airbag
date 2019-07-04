@@ -64,12 +64,6 @@ namespace Airbag
                 StringComparison.OrdinalIgnoreCase);
 
             services.AddCors();
-            services.AddSingleton(new ProxyOptions
-            {
-                Scheme = "http",
-                Host = _configuration.GetValue("BACKEND_HOST_NAME", "localhost"),
-                Port = _configuration.GetValue("BACKEND_SERVICE_PORT", "80")
-            });
 
             var authenticationBuilder = services.AddAuthentication();
 
@@ -93,10 +87,10 @@ namespace Airbag
                         options.RequireHttpsMetadata = false;
                     }
                 });
-                
+
                 services.AddSingleton(provider);
             }
-            
+
             services.AddSingleton(s =>
                 RestClient.For<IOpenPolicyAgent>(
                     _configuration.GetValue("OPA_URL", "http://localhost:8181")));
@@ -107,6 +101,13 @@ namespace Airbag
 
         public void Configure(IApplicationBuilder app, IHostingEnvironment env)
         {
+            var proxyOptions = new ProxyOptions
+            {
+                Scheme = "http",
+                Host = _configuration.GetValue("BACKEND_HOST_NAME", "localhost"),
+                Port = _configuration.GetValue("BACKEND_SERVICE_PORT", "80")
+            };
+
             if (env.IsDevelopment())
             {
                 app.UseDeveloperExceptionPage();
@@ -119,8 +120,14 @@ namespace Airbag
             app.UseAuthentication();
 
             var routeWhitelistMatcher = app.ApplicationServices.GetRequiredService<RouteWhitelistMatcher>();
-            app.MapWhen(context => !routeWhitelistMatcher.IsMatch(context.Request.Path), Middlewares.UseAirbag);
-            app.RunProxy(app.ApplicationServices.GetRequiredService<ProxyOptions>());
+            app.MapWhen(context => !routeWhitelistMatcher.IsMatch(context.Request.Path), nonWhitelistedPath =>
+            {
+                nonWhitelistedPath.UseAuthenticatedRoutes();
+                nonWhitelistedPath.UseOpenPolicyAgentAuthorizationMiddleware();
+                nonWhitelistedPath.RunProxy(proxyOptions);
+            });
+
+            app.RunProxy(proxyOptions);
         }
     }
 }

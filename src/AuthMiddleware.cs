@@ -5,6 +5,8 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace Airbag
 {
@@ -31,11 +33,17 @@ namespace Airbag
             return user != null;
         }
 
-        public static void UseAuthenticatedRoutes(this IApplicationBuilder app, IEnumerable<string> authSchemas)
+        public static void UseAuthenticatedRoutes(this IApplicationBuilder app)
         {
+            var authSchemes = app.ApplicationServices.GetServices<Provider>().Select(provider => provider.Name);
+            var configuration = app.ApplicationServices.GetRequiredService<IConfiguration>();
+            var validateRoutes = configuration.GetValue("AUTHORIZED_ROUTES_ENABLED", true);
+
+            if (!validateRoutes) return;
+            
             app.Use(async (ctx, next) =>
             {
-                if (!await IsAuthenticated(ctx, authSchemas))
+                if (!await IsAuthenticated(ctx, authSchemes))
                 {
                     ctx.Response.StatusCode = 403;
                     Console.WriteLine("Failed to authenticate");

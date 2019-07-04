@@ -1,30 +1,21 @@
-using System.Linq;
-using Airbag.OpenPolicyAgent;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using static Airbag.OpenPolicyAgent.OpenPolicyAgentAuthorizationMiddlewareConfiguration;
 
-namespace Airbag
+namespace Airbag.OpenPolicyAgent
 {
-    public static class Middlewares
+    static class OpenPolicyAgentAuthorizationMiddlewareExtensions
     {
-        public static void UseAirbag(this IApplicationBuilder app)
+        public static void UseOpenPolicyAgentAuthorizationMiddleware(this IApplicationBuilder app)
         {
             var configuration = app.ApplicationServices.GetRequiredService<IConfiguration>();
+            var middlewareConfig = GetOpaMiddlewareConfig(configuration);
 
-            var validateRoutes = configuration.GetValue("AUTHORIZED_ROUTES_ENABLED", true);
-            var authSchemes = app.ApplicationServices.GetServices<Provider>().Select(provider => provider.Name);
-
-            if (validateRoutes)
+            if (middlewareConfig.Mode != AuthorizationMode.Disabled)
             {
-                app.UseAuthenticatedRoutes(authSchemes);
+                app.UseMiddleware<OpenPolicyAgentAuthorizationMiddleware>(middlewareConfig);
             }
-
-            app.UseMiddleware<OpenPolicyAgentAuthorizationMiddleware>(GetOpaMiddlewareConfig(configuration));
-
-            var proxyOptions = app.ApplicationServices.GetRequiredService<ProxyOptions>();
-            app.RunProxy(proxyOptions);
         }
 
         private static OpenPolicyAgentAuthorizationMiddlewareConfiguration GetOpaMiddlewareConfig(IConfiguration configuration)

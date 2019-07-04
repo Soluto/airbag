@@ -1,5 +1,4 @@
-﻿using System;
-namespace Airbag.OpenPolicyAgent
+﻿namespace Airbag.OpenPolicyAgent
 {
     public class OpenPolicyAgentAuthorizationMiddlewareConfiguration
     {
