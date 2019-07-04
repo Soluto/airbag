@@ -100,6 +100,9 @@ namespace Airbag
             services.AddSingleton(s =>
                 RestClient.For<IOpenPolicyAgent>(
                     _configuration.GetValue("OPA_URL", "http://localhost:8181")));
+
+            var whitelistedRoutes = _configuration.GetValue("UNAUTHENTICATED_ROUTES", string.Empty).Split(',');
+            services.AddSingleton(new RouteWhitelistMatcher(whitelistedRoutes));
         }
 
         public void Configure(IApplicationBuilder app, IHostingEnvironment env)
@@ -114,9 +117,9 @@ namespace Airbag
                 .AllowAnyHeader());
 
             app.UseAuthentication();
-            
-            var unauthenticatedRoutes = _configuration.GetValue("UNAUTHENTICATED_ROUTES", string.Empty).Split(',');
-            app.MapWhen(context => !RouteWhitelistMatcher.IsWhitelisted(context, unauthenticatedRoutes), Middlewares.UseAirbag);
+
+            var routeWhitelistMatcher = app.ApplicationServices.GetRequiredService<RouteWhitelistMatcher>();
+            app.MapWhen(context => !routeWhitelistMatcher.IsMatch(context.Request.Path), Middlewares.UseAirbag);
             app.RunProxy(app.ApplicationServices.GetRequiredService<ProxyOptions>());
         }
     }

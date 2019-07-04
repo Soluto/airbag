@@ -7,11 +7,19 @@ namespace Airbag.Utils
 {
     public class RouteWhitelistMatcher
     {
-        private static bool UrlMatches(string pattern, string url) =>
-            Regex.IsMatch(url, "^" + Regex.Escape(pattern).Replace("\\*", ".*") + "$");
+        private readonly Regex[] patterns;
 
-        public static bool IsWhitelisted(HttpContext ctx, IEnumerable<string> whitelistedRoutes) =>
-            ctx.Request.Path.HasValue &&
-            whitelistedRoutes.Any(whitelistedRoute => UrlMatches(whitelistedRoute, ctx.Request.Path.Value));
+        public RouteWhitelistMatcher(IEnumerable<string> whitelistedRoutes)
+        {
+            this.patterns = whitelistedRoutes
+                .Select(pattern => new Regex("^" + Regex.Escape(pattern).Replace("\\*", ".*") + "$"))
+                .ToArray();
+        }
+
+        public bool IsMatch(PathString path)
+        {
+            return path.HasValue &&
+                   patterns.Any(pattern => pattern.IsMatch(path));
+        }
     }
 }
