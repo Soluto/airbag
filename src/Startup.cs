@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using Airbag.OpenPolicyAgent;
+using Airbag.Utils;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
@@ -87,14 +88,26 @@ namespace Airbag
                     }
                 });
 
-                services.AddSingleton(s =>
-                    RestClient.For<IOpenPolicyAgent>(
-                        _configuration.GetValue<string>("OPA_URL", "http://localhost:8181")));
+                services.AddSingleton(provider);
             }
+
+            services.AddSingleton(s =>
+                RestClient.For<IOpenPolicyAgent>(
+                    _configuration.GetValue("OPA_URL", "http://localhost:8181")));
+
+            var whitelistedRoutes = _configuration.GetValue("UNAUTHENTICATED_ROUTES", string.Empty).Split(',');
+            services.AddSingleton(new RouteWhitelistMatcher(whitelistedRoutes));
         }
 
         public void Configure(IApplicationBuilder app, IHostingEnvironment env)
         {
+            var proxyOptions = new ProxyOptions
+            {
+                Scheme = "http",
+                Host = _configuration.GetValue("BACKEND_HOST_NAME", "localhost"),
+                Port = _configuration.GetValue("BACKEND_SERVICE_PORT", "80")
+            };
+
             if (env.IsDevelopment())
             {
                 app.UseDeveloperExceptionPage();
@@ -106,42 +119,15 @@ namespace Airbag
 
             app.UseAuthentication();
 
-            var unauthenticatedConfig = _configuration.GetValue<string>("UNAUTHENTICATED_ROUTES");
-            IEnumerable<string> unauthenticatedRoutes = new List<string>();
-
-            var opaModeRaw = _configuration.GetValue("OPA_MODE", "Disabled");
-
-            if (!Enum.TryParse(opaModeRaw, out AuthorizationMode opaMode))
+            var routeWhitelistMatcher = app.ApplicationServices.GetRequiredService<RouteWhitelistMatcher>();
+            app.MapWhen(context => !routeWhitelistMatcher.IsMatch(context.Request.Path), nonWhitelistedPath =>
             {
-                throw new Exception($"Invalid opa mode provided {opaModeRaw}");
-            }
-
-            var opaQuery = _configuration.GetValue("OPA_QUERY_PATH", string.Empty);
-            var validateRoutes = _configuration.GetValue("AUTHORIZED_ROUTES_ENABLED", true);
-
-            if (unauthenticatedConfig != null)
-            {
-                unauthenticatedRoutes = unauthenticatedConfig.Split(',');
-            }
-
-            if (validateRoutes)
-            {
-                app.UseAuthenticatedRoutes(unauthenticatedRoutes, GetProviders().Select(provider => provider.Name));
-            }
-
-            app.UseMiddleware<OpenPolicyAgentAuthorizationMiddleware>(
-                new OpenPolicyAgentAuthorizationMiddlewareConfiguration
-                {
-                    Mode = opaMode,
-                    QueryPath = opaQuery
-                });
-
-            app.RunProxy(new ProxyOptions
-            {
-                Scheme = "http",
-                Host = _configuration.GetValue("BACKEND_HOST_NAME", "localhost"),
-                Port = _configuration.GetValue("BACKEND_SERVICE_PORT", "80")
+                nonWhitelistedPath.UseAuthenticatedRoutes();
+                nonWhitelistedPath.UseOpenPolicyAgentAuthorizationMiddleware();
+                nonWhitelistedPath.RunProxy(proxyOptions);
             });
+
+            app.RunProxy(proxyOptions);
         }
     }
 }
