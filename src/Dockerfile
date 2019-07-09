@@ -10,7 +10,7 @@ COPY . ./
 RUN dotnet publish -c Release -o out
 
 # Build runtime image
-FROM mcr.microsoft.com/dotnet/core/aspnet:2.2.5-alpine
+FROM mcr.microsoft.com/dotnet/core/aspnet:2.2.6-alpine
 RUN addgroup dotnet && adduser -D -G dotnet -h /home/dotnet dotnet
 USER dotnet
 WORKDIR /home/dotnet/app
