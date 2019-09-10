@@ -34,12 +34,13 @@ namespace Airbag
 
             var providers = _configuration.AsEnumerable()
                 .Select(pair => pair.Key)
-                .Where(key => key.StartsWith("ISSUER_") || key.StartsWith("AUDIENCE_") || key.StartsWith("AUTHORITY_"))
-                .GroupBy(key => string.Join("_", key.Split('_').Skip(1)))
+                .Where(key => key.StartsWith("ISSUER_") || key.StartsWith("AUDIENCE_") || key.StartsWith("AUTHORITY_") || key.StartsWith("VALIDATE_AUDIENCE_"))
+                .GroupBy(key => string.Join("_", key.Split('_').Last()))
                 .Select(grouping => new Provider
                 {
                     Name = grouping.Key,
                     Issuer = _configuration.GetValue<string>("ISSUER_" + grouping.Key),
+                    ValidateAudience = bool.Parse(_configuration.GetValue<string>("VALIDATE_AUDIENCE_" + grouping.Key, "true")),
                     Audience = _configuration.GetValue<string>("AUDIENCE_" + grouping.Key),
                     Authority = _configuration.GetValue<string>("AUTHORITY_" + grouping.Key)
                 })
@@ -74,7 +75,7 @@ namespace Airbag
                     options.TokenValidationParameters = new TokenValidationParameters
                     {
                         ValidIssuer = provider.Issuer,
-                        ValidAudience = provider.Audience,
+                        ValidateAudience = false,
                         ValidateLifetime = true
                     };
 
