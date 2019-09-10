@@ -75,7 +75,8 @@ namespace Airbag
                     options.TokenValidationParameters = new TokenValidationParameters
                     {
                         ValidIssuer = provider.Issuer,
-                        ValidateAudience = false,
+                        ValidateAudience = provider.ValidateAudience,
+                        ValidAudience = provider.Audience,
                         ValidateLifetime = true
                     };
 
