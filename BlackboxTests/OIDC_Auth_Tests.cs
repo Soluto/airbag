@@ -49,6 +49,15 @@ namespace BlackboxTests
             var result = await SendRequest(tokenResponse.AccessToken);
             Assert.Equal(HttpStatusCode.Forbidden, result.StatusCode);
         }
+
+        [Fact]
+        public async Task RequestWithInvalidAudience_AirbagIgnoreAudience_ForwardRequestToBackendContainer()
+        {
+            var tokenResponse = await _validTokenClient.RequestClientCredentialsAsync("api2", "http://localhost:5006/");
+       
+            var result = await SendRequest(tokenResponse.AccessToken);
+            Assert.Equal(HttpStatusCode.OK, result.StatusCode);
+        }
         
         [Fact]
         public async Task RequestWithValidTokenFromAnotherProvider_ForwardRequestToBackendContainer()
@@ -141,9 +150,9 @@ namespace BlackboxTests
             Assert.Equal(HttpStatusCode.Forbidden, result.StatusCode);
         }
 
-        private static async Task<HttpResponseMessage> SendRequest(string jwtToken)
+        private static async Task<HttpResponseMessage> SendRequest(string jwtToken, string url = AirbagUrl)
         {
-            var request = new HttpRequestMessage(HttpMethod.Get, AirbagUrl);
+            var request = new HttpRequestMessage(HttpMethod.Get, url);
             request.SetBearerToken(jwtToken);
             var result = await new HttpClient().SendAsync(request);
             return result;
