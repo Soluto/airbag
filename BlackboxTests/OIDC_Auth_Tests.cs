@@ -40,6 +40,15 @@ namespace BlackboxTests
             var result = await SendRequest(tokenResponse.AccessToken);
             Assert.Equal(HttpStatusCode.OK, result.StatusCode);
         }
+
+        [Fact]
+        public async Task RequestWithInvalidAudience_Return403Forbidden()
+        {
+            var tokenResponse = await _validTokenClient.RequestClientCredentialsAsync("api2");
+       
+            var result = await SendRequest(tokenResponse.AccessToken);
+            Assert.Equal(HttpStatusCode.Forbidden, result.StatusCode);
+        }
         
         [Fact]
         public async Task RequestWithValidTokenFromAnotherProvider_ForwardRequestToBackendContainer()
