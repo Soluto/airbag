@@ -26,7 +26,7 @@ namespace SampleAuthServer
 
                 AllowedScopes = { "api1", "api2" },
 
-                AccessTokenLifetime = 3600
+                AccessTokenLifetime = 3
             }
         };
     }
