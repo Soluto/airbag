@@ -2,6 +2,11 @@ namespace Airbag
 {
     public class Provider
     {
+        public Provider()
+        {
+            ValidateAudience = true;
+        }
+
         public string Name { get; set; }
         public string Issuer { get; set; }
         public string Audience { get; set; }
