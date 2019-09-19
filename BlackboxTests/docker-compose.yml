@@ -26,6 +26,28 @@ services:
     ports:
     - "5001:5001"
 
+  airbag-without-aud-validation:
+    build: ../src
+    depends_on:
+    - valid_auth_server
+    - auth_server_with_different_issuer
+    - protected_api
+    - opa
+    environment:
+    - ASPNETCORE_ENVIRONMENT=Development
+    - AUTHORITY_ANOTHER=http://valid_auth_server
+    - ISSUER_ANOTHER=http://localhost:5002
+    - VALIDATE_AUDIENCE_ANOTHER=false
+    - BACKEND_HOST_NAME=protected_api
+    - BACKEND_SERVICE_PORT=8080
+    - COLLECT_METRICS=false
+    - UNAUTHENTICATED_ROUTES=/isAlive,/foo*
+    - OPA_QUERY_PATH=protected_api/allow
+    - OPA_MODE=Enabled
+    - OPA_URL=http://opa:8181
+    ports:
+    - "5006:5001"
+
   valid_auth_server:
     build: ../SampleAuthServer
     ports:

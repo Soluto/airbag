@@ -4,7 +4,7 @@ dotnet: 2.2
 
 before_script:
   - dotnet test UnitTests/
-  - cd BlackboxTests && docker-compose up -d
+  - cd BlackboxTests && docker-compose build && docker-compose up -d
 
 script:
   - dotnet test
