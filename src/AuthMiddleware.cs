@@ -32,6 +32,7 @@ namespace Airbag
             var configuration = app.ApplicationServices.GetRequiredService<IConfiguration>();
             var validateRoutes = configuration.GetValue("AUTHORIZED_ROUTES_ENABLED", true);
 
+
             if (!validateRoutes) return;
 
             app.Use(async (ctx, next) =>
