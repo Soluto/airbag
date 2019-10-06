@@ -14,36 +14,29 @@ namespace Airbag
     {
         private static async Task<bool> IsAuthenticated(HttpContext ctx, IEnumerable<string> authSchemas)
         {
-            var results = await Task.WhenAll(authSchemas.Select(async schema =>
+            foreach (var shecma in authSchemas)
             {
-                try
+                var res = await ctx.AuthenticateAsync(shecma);
+                if (res != null && res.Succeeded)
                 {
-                   return await ctx.AuthenticateAsync(schema);
+                    ctx.Request.HttpContext.User = res.Principal;
+                    return true;
                 }
-                catch
-                {
-                    return null;
-                }
-            }));
-
-            var user = results.FirstOrDefault(res => res != null && res.Succeeded)?.Principal;
-
-            ctx.Request.HttpContext.User = user;
-            
-            return user != null;
+            }
+            return false;
         }
 
         public static void UseAuthenticatedRoutes(this IApplicationBuilder app)
         {
-            var authSchemes = app.ApplicationServices.GetServices<Provider>().Select(provider => provider.Name);
+            var providersNames = app.ApplicationServices.GetServices<Provider>().Select(provider => provider.Name);
             var configuration = app.ApplicationServices.GetRequiredService<IConfiguration>();
             var validateRoutes = configuration.GetValue("AUTHORIZED_ROUTES_ENABLED", true);
 
             if (!validateRoutes) return;
-            
+
             app.Use(async (ctx, next) =>
             {
-                if (!await IsAuthenticated(ctx, authSchemes))
+                if (!await IsAuthenticated(ctx, providersNames))
                 {
                     ctx.Response.StatusCode = 403;
                     Console.WriteLine("Failed to authenticate");
