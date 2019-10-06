@@ -28,7 +28,7 @@ namespace Airbag
 
         public static void UseAuthenticatedRoutes(this IApplicationBuilder app)
         {
-            var providersNames = app.ApplicationServices.GetServices<Provider>().Select(provider => provider.Name);
+            var authSchemes = app.ApplicationServices.GetServices<Provider>().Select(provider => provider.Name);
             var configuration = app.ApplicationServices.GetRequiredService<IConfiguration>();
             var validateRoutes = configuration.GetValue("AUTHORIZED_ROUTES_ENABLED", true);
 
@@ -36,7 +36,7 @@ namespace Airbag
 
             app.Use(async (ctx, next) =>
             {
-                if (!await IsAuthenticated(ctx, providersNames))
+                if (!await IsAuthenticated(ctx, authSchemes))
                 {
                     ctx.Response.StatusCode = 403;
                     Console.WriteLine("Failed to authenticate");
