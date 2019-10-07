@@ -16,12 +16,16 @@ namespace Airbag
         {
             foreach (var shecma in authSchemas)
             {
-                var res = await ctx.AuthenticateAsync(shecma);
-                if (res != null && res.Succeeded)
+                try
                 {
-                    ctx.Request.HttpContext.User = res.Principal;
-                    return true;
+                    var res = await ctx.AuthenticateAsync(shecma);
+                    if (res != null && res.Succeeded)
+                    {
+                        ctx.Request.HttpContext.User = res.Principal;
+                        return true;
+                    }
                 }
+                catch { }
             }
             return false;
         }
