@@ -21,7 +21,7 @@ RUN addgroup dotnet && adduser -D -G dotnet -h /home/dotnet dotnet
 RUN mkdir -p /opt/datadog \
     && wget -O- https://github.com/DataDog/dd-trace-dotnet/releases/download/v1.11.0/datadog-dotnet-apm-1.11.0.tar.gz | tar xzf - -C /opt/datadog \
     && apk add libc6-compat
-ENV CORECLR_ENABLE_PROFILING=1
+ENV CORECLR_ENABLE_PROFILING=0
 ENV CORECLR_PROFILER={846F5F1C-F9AE-4B07-969E-05C26BC060D8}
 ENV CORECLR_PROFILER_PATH=/opt/datadog/Datadog.Trace.ClrProfiler.Native.so
 ENV DD_INTEGRATIONS=/opt/datadog/integrations.json
