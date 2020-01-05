@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using Airbag.OpenPolicyAgent;
 using Airbag.Utils;
@@ -19,7 +20,12 @@ namespace Airbag
 
         public Startup(IConfiguration configuration)
         {
-            _configuration = configuration;
+            var basePath = Directory.GetCurrentDirectory();
+            var builder = new ConfigurationBuilder()
+                .SetBasePath(basePath)
+                .AddJsonFile("appsettings.json")
+                .AddEnvironmentVariables();
+            _configuration = builder.Build();
         }
 
         private IEnumerable<Provider> GetProviders()
