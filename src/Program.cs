@@ -1,4 +1,5 @@
-﻿using App.Metrics.AspNetCore;
+﻿using System.IO;
+using App.Metrics.AspNetCore;
 using App.Metrics.Formatters.Prometheus;
 using Microsoft.AspNetCore;
 using Microsoft.AspNetCore.Hosting;
@@ -13,7 +14,11 @@ namespace Airbag
 
         public static void Main(string[] args)
         {
-            var builder = new ConfigurationBuilder().AddEnvironmentVariables();
+            var basePath = Directory.GetCurrentDirectory();
+            var builder = new ConfigurationBuilder()
+                .SetBasePath(basePath)
+                .AddJsonFile("appsettings.json")
+                .AddEnvironmentVariables();
             _configuration = builder.Build();
             BuildWebHost(args).Run();
         }
