@@ -1,0 +1,100 @@
+version: '1.0'
+kind: pipeline
+metadata:
+  name: airbag/build&publish
+  project: airbag
+spec:
+  terminationPolicy:
+    - type: branch
+      event: onCreate
+  variables:
+    - key: IMAGE_NAME
+      value: airbag
+  contexts:
+    - acreastus
+  triggers:
+    - repo: Soluto/airbag
+      name: github
+      type: git
+      events:
+        - push.heads
+        - pullrequest.opened
+      pullRequestAllowForkEvents: false
+      commentRegex: /.*/gi
+      branchRegex: /.*/gi
+      branchRegexInput: regex
+      provider: github
+      disabled: false
+      verified: true
+      context: github-verified
+      contexts: []
+      variables: []
+
+  stages:
+    - build
+    - test
+    - push
+
+  steps:
+    CloneRepository:
+      type: git-clone
+      description: Cloning repository
+      repo: '${{CF_REPO_OWNER}}/${{CF_REPO_NAME}}'
+      revision: '${{CF_REVISION}}'
+      stage: build
+      git: github
+
+    BuildImage:
+      stage: build
+      title: Building sidecar Docker Image
+      type: build
+      image_name: '${{IMAGE_NAME}}'
+      tag: '${{CF_REVISION}}'
+      working_directory: '${{CloneRepository}}'
+      dockerfile: deployment/Dockerfile
+
+    UnitTests:
+      stage: test
+      image: 'mcr.microsoft.com/dotnet/core/sdk:2.2'
+      title: Unit tests
+      working_directory: '${{CloneRepository}}'
+      commands:
+        - dotnet test UnitTests
+
+    BlackboxTests:
+      stage: test
+      title: Blackbox tests
+      working_directory: '${{CloneRepository}}'
+      type: composition
+      composition: /BlackboxTests/docker-compose.yml
+      composition_candidates:
+        blackbox-tests:
+          image: 'mcr.microsoft.com/dotnet/core/sdk:2.2'
+          command: dotnet test BlackboxTests
+
+    PushApproval:
+      fail_fast: false
+      stage: push
+      type: pending-approval
+      when:
+        branch:
+          only:
+            - master
+      title: Push image to ACR?
+      timeout:
+        duration: 24
+        finalState: denied
+
+    Push:
+      type: push
+      stage: push
+      title: Pushing Image to ACR
+      image_name: '${{IMAGE_NAME}}'
+      registry: AcrEastUs
+      candidate: ${{BuildImage}}
+      tag: '${{CF_REVISION}}'
+      when:
+        condition:
+          all:
+            approved: steps.PushApproval.result == 'approved'
+            masterBranch: '"${{CF_BRANCH}}" == "master"'
