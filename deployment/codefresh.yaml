@@ -82,6 +82,7 @@ spec:
         services:
           airbag:
             image: ${{BuildImage}}
+            container_name: airbag
             depends_on:
               - valid_auth_server
               - auth_server_with_different_issuer
@@ -107,6 +108,7 @@ spec:
 
           airbag-without-aud-validation:
             image: ${{BuildImage}}
+            container_name: airbag-without-aud-validation
             depends_on:
               - valid_auth_server
               - auth_server_with_different_issuer
@@ -129,6 +131,7 @@ spec:
 
           valid_auth_server:
             image: ${{BlackboxSetup}}
+            container_name: valid_auth_server
             ports:
               - '5002:80'
             environment:
@@ -137,6 +140,7 @@ spec:
 
           another_valid_auth_server:
             image: ${{BlackboxSetup}}
+            container_name: another_valid_auth_server
             ports:
               - '5003:80'
             environment:
@@ -145,6 +149,7 @@ spec:
 
           auth_server_with_different_issuer:
             image: ${{BlackboxSetup}}
+            container_name: auth_server_with_different_issuer
             ports:
               - '5004:80'
             environment:
@@ -153,6 +158,7 @@ spec:
 
           auth_server_with_different_signature:
             image: ${{BlackboxSetup}}
+            container_name: auth_server_with_different_signature
             ports:
               - '5005:80'
             environment:
@@ -161,9 +167,11 @@ spec:
 
           protected_api:
             image: jmalloc/echo-server
+            container_name: protected_api
 
           opa:
             image: openpolicyagent/opa
+            container_name: opa
             command: run --server /policies
             ports:
               - 8181:8181
@@ -177,6 +185,13 @@ spec:
           volumes:
             - '${{CF_VOLUME_NAME}}:${{CF_VOLUME_PATH}}'
           working_dir: '${{CF_VOLUME_PATH}}/airbag'
+          environment:
+            - AIRBAG_URL=airbag
+            - VALID_AUTH_SERVER_URL=valid_auth_server
+            - ANOTHER_VALID_AUTH_SERVER_URL=another_valid_auth_server
+            - AUTH_SERVER_DIFFERENT_ISSUER_URL=auth_server_with_different_issuer
+            - AUTH_SERVER_DIFFERENT_SIGNATURE_URL=auth_server_with_different_signature
+            - AIRBAG_WITHOUT_AUD_URL=airbag-without-aud-validation
 
     PushApproval:
       fail_fast: false
