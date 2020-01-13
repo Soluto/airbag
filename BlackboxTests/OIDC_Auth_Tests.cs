@@ -37,7 +37,7 @@ namespace BlackboxTests
       return response.AccessToken;
     }
 
-    private async Task<HttpResponseMessage> SendToAuthWithScope(string authority, string scope, string url = null)
+    private async Task<HttpResponseMessage> SendRequestWithAuth(string authority, string scope, string url = null)
     {
       var token = await GetToken(authority, scope);
       return await SendRequest(token, url?? AirbagUrl);
@@ -46,35 +46,35 @@ namespace BlackboxTests
     [Fact]
     public async Task RequestWithValidToken_ForwardRequestToBackendContainer()
     {
-      var result = await SendToAuthWithScope(ValidAuthServerUrl, "api1");
+      var result = await SendRequestWithAuth(ValidAuthServerUrl, "api1");
       Assert.Equal(HttpStatusCode.OK, result.StatusCode);
     }
 
     [Fact]
     public async Task RequestWithInvalidAudience_Return403Forbidden()
     {
-      var result = await SendToAuthWithScope(ValidAuthServerUrl, "api2");
+      var result = await SendRequestWithAuth(ValidAuthServerUrl, "api2");
       Assert.Equal(HttpStatusCode.Forbidden, result.StatusCode);
     }
 
     [Fact]
     public async Task RequestWithInvalidAudience_AnotherProvider_Return403Forbidden()
     {
-      var result = await SendToAuthWithScope(AnotherValidAuthServerUrl, "api2");
+      var result = await SendRequestWithAuth(AnotherValidAuthServerUrl, "api2");
       Assert.Equal(HttpStatusCode.Forbidden, result.StatusCode);
     }
 
     [Fact]
     public async Task RequestWithInvalidAudience_AirbagIgnoreAudience_ForwardRequestToBackendContainer()
     {
-      var result = await SendToAuthWithScope(ValidAuthServerUrl, "api2", AirbagWithoutAudUrl);
+      var result = await SendRequestWithAuth(ValidAuthServerUrl, "api2", AirbagWithoutAudUrl);
       Assert.Equal(HttpStatusCode.OK, result.StatusCode);
     }
 
     [Fact]
     public async Task RequestWithValidTokenFromAnotherProvider_ForwardRequestToBackendContainer()
     {
-      var result = await SendToAuthWithScope(AnotherValidAuthServerUrl, "api1");
+      var result = await SendRequestWithAuth(AnotherValidAuthServerUrl, "api1");
       Assert.Equal(HttpStatusCode.OK, result.StatusCode);
     }
 
@@ -123,7 +123,7 @@ namespace BlackboxTests
     [Fact]
     public async Task RequestWithWrongIssuer_Return403Forbidden()
     {
-      var result = await SendToAuthWithScope(AuthServerOtherIssuerUrl, "api1");
+      var result = await SendRequestWithAuth(AuthServerOtherIssuerUrl, "api1");
       Assert.Equal(HttpStatusCode.Forbidden, result.StatusCode);
     }
 
@@ -131,14 +131,14 @@ namespace BlackboxTests
     [Fact]
     public async Task RequestWithWrongSignature_Return403Forbidden()
     {
-      var result = await SendToAuthWithScope(AuthServerOtherSignatureUrl, "api1");
+      var result = await SendRequestWithAuth(AuthServerOtherSignatureUrl, "api1");
       Assert.Equal(HttpStatusCode.Forbidden, result.StatusCode);
     }
 
     [Fact]
     public async Task RequestWithWrongAudience_Return403Forbidden()
     {
-      var result = await SendToAuthWithScope(AuthServerOtherIssuerUrl, "api2");
+      var result = await SendRequestWithAuth(AuthServerOtherIssuerUrl, "api2");
       Assert.Equal(HttpStatusCode.Forbidden, result.StatusCode);
     }
 
