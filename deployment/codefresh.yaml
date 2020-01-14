@@ -101,7 +101,7 @@ spec:
         branch:
           only:
             - master
-      title: Push image to ACR?
+      title: Push image to Docker Hub?
       timeout:
         duration: 24
         finalState: denied
