@@ -1,4 +1,4 @@
-# airbag
+# Airbag
 [![Build Status](https://travis-ci.org/Soluto/airbag.svg?branch=master)](https://travis-ci.org/Soluto/airbag)   
    
 airbag is a tiny sidecar for your docker containers, meant to handle jwt authentication and basic metrics collection for you.
