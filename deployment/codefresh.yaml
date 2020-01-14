@@ -46,6 +46,14 @@ spec:
       stage: build
       git: github
 
+    UnitTests:
+      stage: build
+      image: mcr.microsoft.com/dotnet/core/sdk:3.1-alpine
+      title: Unit tests
+      working_directory: ${{CloneRepository}}
+      commands:
+        - dotnet test UnitTests
+
     BuildImage:
       stage: build
       title: Building sidecar Docker Image
@@ -54,14 +62,6 @@ spec:
       tag: ${{CF_REVISION}}
       working_directory: ${{CloneRepository}}
       dockerfile: deployment/Dockerfile
-
-    UnitTests:
-      stage: test
-      image: mcr.microsoft.com/dotnet/core/sdk:2.2
-      title: Unit tests
-      working_directory: ${{CloneRepository}}
-      commands:
-        - dotnet test UnitTests
 
     BlackboxSetup:
       stage: test
@@ -80,7 +80,7 @@ spec:
       composition: /deployment/blackbox-compose.yaml
       composition_candidates:
         blackbox-tests:
-          image: mcr.microsoft.com/dotnet/core/sdk:2.2
+          image: mcr.microsoft.com/dotnet/core/sdk:3.1-alpine
           command: dotnet test BlackboxTests/BlackboxTests.csproj
           volumes:
             - '${{CF_VOLUME_NAME}}:${{CF_VOLUME_PATH}}'
