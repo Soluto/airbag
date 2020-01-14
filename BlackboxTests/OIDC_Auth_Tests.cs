@@ -1,170 +1,165 @@
 ﻿using System.Net;
 using System.Net.Http;
 using System.Threading.Tasks;
+using IdentityModel;
 using IdentityModel.Client;
 using Xunit;
 
 namespace BlackboxTests
 {
-    // these tests assume they run in a docker-compose environment
-    // they assume that other than the tests container, the other containers also running are airbag and nginx
-    // see the BlackboxTests/docker-compose file for details
-    public class OidcAuthTests
+  public class OidcAuthTests
+  {
+    private string AirbagUrl = System.Environment.GetEnvironmentVariable("AIRBAG_URL");
+    private string ValidAuthServerUrl = System.Environment.GetEnvironmentVariable("VALID_AUTH_SERVER_URL");
+    private string AnotherValidAuthServerUrl = System.Environment.GetEnvironmentVariable("ANOTHER_VALID_AUTH_SERVER_URL");
+    private string AuthServerOtherIssuerUrl = System.Environment.GetEnvironmentVariable("AUTH_SERVER_DIFFERENT_ISSUER_URL");
+    private string AuthServerOtherSignatureUrl = System.Environment.GetEnvironmentVariable("AUTH_SERVER_DIFFERENT_SIGNATURE_URL");
+    private string AirbagWithoutAudUrl = System.Environment.GetEnvironmentVariable("AIRBAG_WITHOUT_AUD_URL");
+
+    public OidcAuthTests()
     {
-        private static TokenClient _validTokenClient;
-        private static TokenClient _anotherValidTokenClient;
-        private static TokenClient _differentIssuerTokenClient;
-        private static TokenClient _otherSignatureTokenClient;
-        private const string AirbagUrl = "http://localhost:5001/";
-
-        public OidcAuthTests()
-        {
-            var validDiscovery = DiscoveryClient.GetAsync("http://localhost:5002").Result;
-            _validTokenClient = new TokenClient(validDiscovery.TokenEndpoint, "client", "secret");
-            
-            var anotherValidDiscovery = DiscoveryClient.GetAsync("http://localhost:5003").Result;
-            _anotherValidTokenClient = new TokenClient(anotherValidDiscovery.TokenEndpoint, "client", "secret");
-
-            var otherIssuerDiscovery = DiscoveryClient.GetAsync("http://localhost:5004").Result;
-            _differentIssuerTokenClient = new TokenClient(otherIssuerDiscovery.TokenEndpoint, "client", "secret");
-
-            var otherSignatureDiscovery = DiscoveryClient.GetAsync("http://localhost:5005").Result;
-            _otherSignatureTokenClient = new TokenClient(otherSignatureDiscovery.TokenEndpoint, "client", "secret");
-        }
-
-        [Fact]
-        public async Task RequestWithValidToken_ForwardRequestToBackendContainer()
-        {
-            var tokenResponse = await _validTokenClient.RequestClientCredentialsAsync("api1");
-       
-            var result = await SendRequest(tokenResponse.AccessToken);
-            Assert.Equal(HttpStatusCode.OK, result.StatusCode);
-        }
-
-        [Fact]
-        public async Task RequestWithInvalidAudience_Return403Forbidden()
-        {
-            var tokenResponse = await _validTokenClient.RequestClientCredentialsAsync("api2");
-       
-            var result = await SendRequest(tokenResponse.AccessToken);
-            Assert.Equal(HttpStatusCode.Forbidden, result.StatusCode);
-        }
-
-        [Fact]
-        public async Task RequestWithInvalidAudience_AnotherProvider_Return403Forbidden()
-        {
-            var tokenResponse = await _anotherValidTokenClient.RequestClientCredentialsAsync("api2");
-
-            var result = await SendRequest(tokenResponse.AccessToken);
-            Assert.Equal(HttpStatusCode.Forbidden, result.StatusCode);
-        }
-
-        [Fact]
-        public async Task RequestWithInvalidAudience_AirbagIgnoreAudience_ForwardRequestToBackendContainer()
-        {
-            var tokenResponse = await _validTokenClient.RequestClientCredentialsAsync("api2");
-       
-            var result = await SendRequest(tokenResponse.AccessToken, "http://localhost:5006/");
-            Assert.Equal(HttpStatusCode.OK, result.StatusCode);
-        }
-
-        [Fact]
-        public async Task RequestWithValidTokenFromAnotherProvider_ForwardRequestToBackendContainer()
-        {
-            var tokenResponse = await _anotherValidTokenClient.RequestClientCredentialsAsync("api1");
-
-            var result = await SendRequest(tokenResponse.AccessToken);
-            Assert.Equal(HttpStatusCode.OK, result.StatusCode);
-        }
-
-        [Fact]
-        public async Task RequestWithoutAuthorizationHeader_RouteIsWhitelisted_ForwardRequestToBackendContainer()
-        {
-            var result = await new HttpClient().GetAsync(AirbagUrl + "isAlive");
-            Assert.Equal(HttpStatusCode.OK, result.StatusCode);
-        }
-
-        [Fact]
-        public async Task
-            RequestWithoutAuthorizationHeader_RouteIsWhitelistedWithWildCard_ForwardRequestToBackendContainer()
-        {
-            var result = await new HttpClient().GetAsync(AirbagUrl + "foo/bar");
-            Assert.Equal(HttpStatusCode.OK, result.StatusCode);
-        }
-
-        [Fact]
-        public async Task
-            RequestWithoutAuthorizationHeader_RouteIsNotWhitelistedButContainsPartialWildcard_Return403Forbidden()
-        {
-            var result = await new HttpClient().GetAsync(AirbagUrl + "api/foo/bar");
-            Assert.Equal(HttpStatusCode.Forbidden, result.StatusCode);
-        }
-
-        [Fact]
-        public async Task RequestWithoutAuthorizationHeader_RouteIsNotWhitelisted_Return403Forbidden()
-        {
-            var result = await new HttpClient().GetAsync(AirbagUrl);
-            Assert.Equal(HttpStatusCode.Forbidden, result.StatusCode);
-        }
-
-        [Fact]
-        public async Task RequestWithModifiedJwtToken_Return403Forbidden()
-        {
-            var tokenResponse = await _validTokenClient.RequestClientCredentialsAsync("api1");
-            var arr = tokenResponse.AccessToken.ToCharArray();
-            arr[20] = 'g';
-            var temperedToken = arr.ToString();
-
-            var result = await SendRequest(temperedToken);
-            Assert.Equal(HttpStatusCode.Forbidden, result.StatusCode);
-        }
-
-        [Fact]
-        public async Task RequestWithWrongIssuer_Return403Forbidden()
-        {
-            var tokenResponse = await _differentIssuerTokenClient.RequestClientCredentialsAsync("api1");
-
-            var result = await SendRequest(tokenResponse.AccessToken);
-            Assert.Equal(HttpStatusCode.Forbidden, result.StatusCode);
-        }
-
-
-        [Fact]
-        public async Task RequestWithWrongSignature_Return403Forbidden()
-        {
-            var tokenResponse = await _otherSignatureTokenClient.RequestClientCredentialsAsync("api1");
-
-            var result = await SendRequest(tokenResponse.AccessToken);
-            Assert.Equal(HttpStatusCode.Forbidden, result.StatusCode);
-        }
-
-        [Fact]
-        public async Task RequestWithWrongAudience_Return403Forbidden()
-        {
-            var tokenResponse = await _differentIssuerTokenClient.RequestClientCredentialsAsync("api2");
-
-            var result = await SendRequest(tokenResponse.AccessToken);
-            Assert.Equal(HttpStatusCode.Forbidden, result.StatusCode);
-        }
-
-        [Fact]
-        public async Task RequestWithExpiredToken_Return403Forbidden()
-        {
-            var tokenResponse = await _validTokenClient.RequestClientCredentialsAsync("api1");
-
-            // the token expiration time is 3 seconds, configured in SampleAuthServer
-            await Task.Delay(4000);
-
-            var result = await SendRequest(tokenResponse.AccessToken);
-            Assert.Equal(HttpStatusCode.Forbidden, result.StatusCode);
-        }
-
-        private static async Task<HttpResponseMessage> SendRequest(string jwtToken, string url = AirbagUrl)
-        {
-            var request = new HttpRequestMessage(HttpMethod.Get, url);
-            request.SetBearerToken(jwtToken);
-            var result = await new HttpClient().SendAsync(request);
-            return result;
-        }
     }
+
+    private async Task<string> GetToken(string authority, string scope) {
+      var client = new HttpClient();
+      var response = await client.RequestTokenAsync(new TokenRequest
+      {
+        Address = authority + "/connect/token",
+        GrantType = OidcConstants.GrantTypes.ClientCredentials,
+        ClientId = "client",
+        ClientSecret = "secret",
+
+        Parameters =
+        {
+          {"scope", scope}
+        }
+      });
+      return response.AccessToken;
+    }
+
+    private async Task<HttpResponseMessage> SendRequestWithAuth(string authority, string scope, string url = null)
+    {
+      var token = await GetToken(authority, scope);
+      return await SendRequest(token, url?? AirbagUrl);
+    }
+
+    [Fact]
+    public async Task RequestWithValidToken_ForwardRequestToBackendContainer()
+    {
+      var result = await SendRequestWithAuth(ValidAuthServerUrl, "api1");
+      Assert.Equal(HttpStatusCode.OK, result.StatusCode);
+    }
+
+    [Fact]
+    public async Task RequestWithInvalidAudience_Return403Forbidden()
+    {
+      var result = await SendRequestWithAuth(ValidAuthServerUrl, "api2");
+      Assert.Equal(HttpStatusCode.Forbidden, result.StatusCode);
+    }
+
+    [Fact]
+    public async Task RequestWithInvalidAudience_AnotherProvider_Return403Forbidden()
+    {
+      var result = await SendRequestWithAuth(AnotherValidAuthServerUrl, "api2");
+      Assert.Equal(HttpStatusCode.Forbidden, result.StatusCode);
+    }
+
+    [Fact]
+    public async Task RequestWithInvalidAudience_AirbagIgnoreAudience_ForwardRequestToBackendContainer()
+    {
+      var result = await SendRequestWithAuth(ValidAuthServerUrl, "api2", AirbagWithoutAudUrl);
+      Assert.Equal(HttpStatusCode.OK, result.StatusCode);
+    }
+
+    [Fact]
+    public async Task RequestWithValidTokenFromAnotherProvider_ForwardRequestToBackendContainer()
+    {
+      var result = await SendRequestWithAuth(AnotherValidAuthServerUrl, "api1");
+      Assert.Equal(HttpStatusCode.OK, result.StatusCode);
+    }
+
+    [Fact]
+    public async Task RequestWithoutAuthorizationHeader_RouteIsWhitelisted_ForwardRequestToBackendContainer()
+    {
+      var result = await new HttpClient().GetAsync(AirbagUrl + "/isAlive");
+      Assert.Equal(HttpStatusCode.OK, result.StatusCode);
+    }
+
+    [Fact]
+    public async Task
+        RequestWithoutAuthorizationHeader_RouteIsWhitelistedWithWildCard_ForwardRequestToBackendContainer()
+    {
+      var result = await new HttpClient().GetAsync(AirbagUrl + "/foo/bar");
+      Assert.Equal(HttpStatusCode.OK, result.StatusCode);
+    }
+
+    [Fact]
+    public async Task
+        RequestWithoutAuthorizationHeader_RouteIsNotWhitelistedButContainsPartialWildcard_Return403Forbidden()
+    {
+      var result = await new HttpClient().GetAsync(AirbagUrl + "/api/foo/bar");
+      Assert.Equal(HttpStatusCode.Forbidden, result.StatusCode);
+    }
+
+    [Fact]
+    public async Task RequestWithoutAuthorizationHeader_RouteIsNotWhitelisted_Return403Forbidden()
+    {
+      var result = await new HttpClient().GetAsync(AirbagUrl);
+      Assert.Equal(HttpStatusCode.Forbidden, result.StatusCode);
+    }
+
+    [Fact]
+    public async Task RequestWithModifiedJwtToken_Return403Forbidden()
+    {
+      var token = await GetToken(ValidAuthServerUrl, "api1");
+      var arr = token.ToCharArray();
+      arr[20] = 'g';
+      var temperedToken = arr.ToString();
+
+      var result = await SendRequest(temperedToken, AirbagUrl);
+      Assert.Equal(HttpStatusCode.Forbidden, result.StatusCode);
+    }
+
+    [Fact]
+    public async Task RequestWithWrongIssuer_Return403Forbidden()
+    {
+      var result = await SendRequestWithAuth(AuthServerOtherIssuerUrl, "api1");
+      Assert.Equal(HttpStatusCode.Forbidden, result.StatusCode);
+    }
+
+
+    [Fact]
+    public async Task RequestWithWrongSignature_Return403Forbidden()
+    {
+      var result = await SendRequestWithAuth(AuthServerOtherSignatureUrl, "api1");
+      Assert.Equal(HttpStatusCode.Forbidden, result.StatusCode);
+    }
+
+    [Fact]
+    public async Task RequestWithWrongAudience_Return403Forbidden()
+    {
+      var result = await SendRequestWithAuth(AuthServerOtherIssuerUrl, "api2");
+      Assert.Equal(HttpStatusCode.Forbidden, result.StatusCode);
+    }
+
+    [Fact]
+    public async Task RequestWithExpiredToken_Return403Forbidden()
+    {
+      var token = await GetToken(ValidAuthServerUrl, "api1");
+
+      // the token expiration time is 3 seconds, configured in SampleAuthServer
+      await Task.Delay(4000);
+
+      var result = await SendRequest(token, AirbagUrl);
+      Assert.Equal(HttpStatusCode.Forbidden, result.StatusCode);
+    }
+
+    private static async Task<HttpResponseMessage> SendRequest(string jwtToken, string url)
+    {
+      var request = new HttpRequestMessage(HttpMethod.Get, url);
+      request.SetBearerToken(jwtToken);
+      var result = await new HttpClient().SendAsync(request);
+      return result;
+    }
+  }
 }
