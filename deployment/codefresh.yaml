@@ -9,7 +9,7 @@ spec:
       event: onCreate
   variables:
     - key: IMAGE_NAME
-      value: airbag
+      value: soluto/airbag
     - key: SAMPLE_AUTH_IMAGE
       value: sample-auth
   contexts:
@@ -109,13 +109,13 @@ spec:
     Push:
       type: push
       stage: push
-      title: Pushing Image to ACR
+      title: Pushing Image to Docker Hub
+      registry: dockerhub-tweek
       image_name: ${{IMAGE_NAME}}
-      registry: AcrEastUs
       candidate: ${{BuildImage}}
       tags:
         - latest
-        - "2.1.0"
+        - "2.2.0"
       when:
         condition:
           all:
