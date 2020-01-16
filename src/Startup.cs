@@ -10,7 +10,6 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.IdentityModel.Tokens;
 using RestEase;
-using static Airbag.OpenPolicyAgent.OpenPolicyAgentAuthorizationMiddlewareConfiguration;
 
 namespace Airbag
 {
@@ -127,6 +126,7 @@ namespace Airbag
             {
                 nonWhitelistedPath.UseAuthenticatedRoutes();
                 nonWhitelistedPath.UseOpenPolicyAgentAuthorizationMiddleware();
+                nonWhitelistedPath.AddClientIdMetric();
                 nonWhitelistedPath.RunProxy(proxyOptions);
             });
 

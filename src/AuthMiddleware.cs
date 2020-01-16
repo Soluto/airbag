@@ -14,11 +14,11 @@ namespace Airbag
     {
         private static async Task<bool> IsAuthenticated(HttpContext ctx, IEnumerable<string> authSchemas)
         {
-            foreach (var shecma in authSchemas)
+            foreach (var schema in authSchemas)
             {
                 try
                 {
-                    var res = await ctx.AuthenticateAsync(shecma);
+                    var res = await ctx.AuthenticateAsync(schema);
                     if (res != null && res.Succeeded)
                     {
                         ctx.Request.HttpContext.User = res.Principal;
