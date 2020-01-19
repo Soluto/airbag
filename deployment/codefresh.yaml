@@ -115,7 +115,8 @@ spec:
       candidate: ${{BuildImage}}
       tags:
         - latest
-        - "2.2.0"
+        - "2.2.1"
+        - ${{CF_REVISION}}
       when:
         condition:
           all:
