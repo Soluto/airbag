@@ -32,7 +32,7 @@ namespace Airbag
             return false;
         }
 
-        public static void UseAuthenticatedRoutes(this IApplicationBuilder app, IMetrics metrics)
+        public static void UseAuthenticatedRoutes(this IApplicationBuilder app)
         {
             var authSchemes = app.ApplicationServices.GetServices<Provider>().Select(provider => provider.Name);
             var configuration = app.ApplicationServices.GetRequiredService<IConfiguration>();
@@ -40,12 +40,18 @@ namespace Airbag
 
             if (!validateRoutes) return;
 
+            var metrics = app.ApplicationServices.GetService<IMetrics>();
+            var shouldCollectMetrics = configuration.GetValue<bool>("COLLECT_METRICS");
+            
             app.Use(async (ctx, next) =>
             {
                 if (!await IsAuthenticated(ctx, authSchemes))
                 {
                     ctx.Response.StatusCode = 403;
-                    metrics.Measure.Counter.Increment(new CounterOptions() {Name = "client_failed_to_authenticate"});
+                    if (shouldCollectMetrics)
+                    {
+                        metrics.Measure.Counter.Increment(new CounterOptions() {Name = "client_failed_to_authenticate"});
+                    }
                     Console.WriteLine("Failed to authenticate");
                     return;
                 }
