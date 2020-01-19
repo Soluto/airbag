@@ -19,13 +19,12 @@ namespace Airbag
                 var adAppId = httpContextUser.Claims.FirstOrDefault(x => x.Type == "appid")?.Value;
                 var audience = httpContextUser.Claims.FirstOrDefault(x => x.Type == "aud")?.Value;
 
-                if (adAppId != null && audience != null)
+                if (audience != null)
                 {
-                    
                     metrics.Measure.Counter.Increment(new CounterOptions()
                     {
-                        Name = "request_by_client",
-                        Tags = new MetricTags(new[] {"ad_app_id", "audience"}, new[] {adAppId, audience})
+                        Name = "client_authenticated_successfully",
+                        Tags = new MetricTags(new[] {"ad_app_id", "audience"}, new[] {adAppId ?? "unknown", audience})
                     });
                 }
 
