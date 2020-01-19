@@ -49,6 +49,7 @@ namespace Airbag
                     };
                 })
                 .UseStartup<Startup>()
+                .UseKestrel(options => options.AllowSynchronousIO = true)
                 .Build();
     }
 }

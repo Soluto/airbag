@@ -10,7 +10,6 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.IdentityModel.Tokens;
 using RestEase;
-using static Airbag.OpenPolicyAgent.OpenPolicyAgentAuthorizationMiddlewareConfiguration;
 
 namespace Airbag
 {
@@ -121,12 +120,20 @@ namespace Airbag
                 .AllowAnyHeader());
 
             app.UseAuthentication();
+            
+            var shouldCollectMetrics = _configuration.GetValue<bool>("COLLECT_METRICS");
 
             var routeWhitelistMatcher = app.ApplicationServices.GetRequiredService<RouteWhitelistMatcher>();
             app.MapWhen(context => !routeWhitelistMatcher.IsMatch(context.Request.Path), nonWhitelistedPath =>
             {
                 nonWhitelistedPath.UseAuthenticatedRoutes();
                 nonWhitelistedPath.UseOpenPolicyAgentAuthorizationMiddleware();
+                
+                if (shouldCollectMetrics)
+                {
+                    nonWhitelistedPath.AddClientIdMetric();
+                }
+
                 nonWhitelistedPath.RunProxy(proxyOptions);
             });
 

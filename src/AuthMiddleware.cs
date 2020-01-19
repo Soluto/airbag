@@ -2,6 +2,8 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using App.Metrics;
+using App.Metrics.Counter;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
@@ -14,11 +16,11 @@ namespace Airbag
     {
         private static async Task<bool> IsAuthenticated(HttpContext ctx, IEnumerable<string> authSchemas)
         {
-            foreach (var shecma in authSchemas)
+            foreach (var schema in authSchemas)
             {
                 try
                 {
-                    var res = await ctx.AuthenticateAsync(shecma);
+                    var res = await ctx.AuthenticateAsync(schema);
                     if (res != null && res.Succeeded)
                     {
                         ctx.Request.HttpContext.User = res.Principal;
@@ -38,11 +40,18 @@ namespace Airbag
 
             if (!validateRoutes) return;
 
+            var metrics = app.ApplicationServices.GetService<IMetrics>();
+            var shouldCollectMetrics = configuration.GetValue<bool>("COLLECT_METRICS");
+            
             app.Use(async (ctx, next) =>
             {
                 if (!await IsAuthenticated(ctx, authSchemes))
                 {
                     ctx.Response.StatusCode = 403;
+                    if (shouldCollectMetrics)
+                    {
+                        metrics.Measure.Counter.Increment(new CounterOptions() {Name = "client_failed_to_authenticate"});
+                    }
                     Console.WriteLine("Failed to authenticate");
                     return;
                 }
