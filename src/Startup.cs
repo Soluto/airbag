@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Airbag.OpenPolicyAgent;
 using Airbag.Utils;
+using App.Metrics;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
@@ -16,10 +17,12 @@ namespace Airbag
     public class Startup
     {
         private readonly IConfiguration _configuration;
+        private readonly IMetrics _metrics;
 
-        public Startup(IConfiguration configuration)
+        public Startup(IConfiguration configuration, IMetrics metrics)
         {
             _configuration = configuration;
+            _metrics = metrics;
         }
 
         private IEnumerable<Provider> GetProviders()
@@ -120,13 +123,20 @@ namespace Airbag
                 .AllowAnyHeader());
 
             app.UseAuthentication();
+            
+            var shouldCollectMetrics = _configuration.GetValue<bool>("COLLECT_METRICS");
 
             var routeWhitelistMatcher = app.ApplicationServices.GetRequiredService<RouteWhitelistMatcher>();
             app.MapWhen(context => !routeWhitelistMatcher.IsMatch(context.Request.Path), nonWhitelistedPath =>
             {
-                nonWhitelistedPath.UseAuthenticatedRoutes();
+                nonWhitelistedPath.UseAuthenticatedRoutes(_metrics);
                 nonWhitelistedPath.UseOpenPolicyAgentAuthorizationMiddleware();
-                nonWhitelistedPath.AddClientIdMetric();
+                
+                if (shouldCollectMetrics)
+                {
+                    nonWhitelistedPath.AddClientIdMetric(_metrics);
+                }
+
                 nonWhitelistedPath.RunProxy(proxyOptions);
             });
 

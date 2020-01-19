@@ -2,6 +2,8 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using App.Metrics;
+using App.Metrics.Counter;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
@@ -30,7 +32,7 @@ namespace Airbag
             return false;
         }
 
-        public static void UseAuthenticatedRoutes(this IApplicationBuilder app)
+        public static void UseAuthenticatedRoutes(this IApplicationBuilder app, IMetrics metrics)
         {
             var authSchemes = app.ApplicationServices.GetServices<Provider>().Select(provider => provider.Name);
             var configuration = app.ApplicationServices.GetRequiredService<IConfiguration>();
@@ -43,6 +45,7 @@ namespace Airbag
                 if (!await IsAuthenticated(ctx, authSchemes))
                 {
                     ctx.Response.StatusCode = 403;
+                    metrics.Measure.Counter.Increment(new CounterOptions() {Name = "client_failed_to_authenticate"});
                     Console.WriteLine("Failed to authenticate");
                     return;
                 }
