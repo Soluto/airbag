@@ -1,7 +1,7 @@
 version: '1.0'
 kind: pipeline
 metadata:
-  name: airbag/build&publish
+  name: airbag/test
   project: airbag
 spec:
   terminationPolicy:
@@ -35,7 +35,6 @@ spec:
   stages:
     - build
     - test
-    - push
 
   steps:
     CloneRepository:
@@ -92,31 +91,3 @@ spec:
             - AUTH_SERVER_DIFFERENT_ISSUER_URL=http://auth_server_with_different_issuer
             - AUTH_SERVER_DIFFERENT_SIGNATURE_URL=http://auth_server_with_different_signature
             - AIRBAG_WITHOUT_AUD_URL=http://airbag-without-aud-validation:5001
-
-    PushApproval:
-      fail_fast: false
-      stage: push
-      type: pending-approval
-      when:
-        branch:
-          only:
-            - master
-      title: Push image to Docker Hub?
-      timeout:
-        duration: 24
-        finalState: denied
-
-    Push:
-      type: push
-      stage: push
-      title: Pushing Image to Docker Hub
-      registry: dockerhub-tweek
-      image_name: ${{IMAGE_NAME}}
-      candidate: ${{BuildImage}}
-      tags:
-        - latest
-        - "2.2.0"
-      when:
-        condition:
-          all:
-            approved: steps.PushApproval.result == 'approved'

@@ -1,0 +1,76 @@
+version: '1.0'
+kind: pipeline
+metadata:
+  name: airbag/publish
+  project: airbag
+spec:
+  terminationPolicy:
+    - type: branch
+      event: onCreate
+  variables:
+    - key: IMAGE_NAME
+      value: soluto/airbag
+  contexts:
+    - acreastus
+  triggers:
+    - repo: Soluto/airbag
+      name: github
+      type: git
+      events:
+        - push.tags
+      pullRequestAllowForkEvents: false
+      commentRegex: /.*/gi
+      branchRegex: /.*/gi
+      branchRegexInput: regex
+      provider: github
+      disabled: false
+      verified: true
+      context: github-verified
+      contexts: []
+      variables: []
+
+  stages:
+    - build
+    - push
+
+  steps:
+    CloneRepository:
+      type: git-clone
+      description: Cloning repository
+      repo: '${{CF_REPO_OWNER}}/${{CF_REPO_NAME}}'
+      revision: ${{CF_REVISION}}
+      stage: build
+      git: github
+
+    BuildImage:
+      stage: build
+      title: Building sidecar Docker Image
+      type: build
+      image_name: ${{IMAGE_NAME}}
+      tag: ${{CF_REVISION}}
+      working_directory: ${{CloneRepository}}
+      dockerfile: deployment/Dockerfile
+
+    PushApproval:
+      fail_fast: false
+      stage: push
+      type: pending-approval
+      title: Push image to Docker Hub?
+      timeout:
+        duration: 24
+        finalState: denied
+
+    Push:
+      type: push
+      stage: push
+      title: Pushing Image to Docker Hub
+      registry: dockerhub-tweek
+      image_name: ${{IMAGE_NAME}}
+      candidate: ${{BuildImage}}
+      tags:
+        - latest
+        - '${{CF_BRANCH}}'
+      when:
+        condition:
+          all:
+            approved: steps.PushApproval.result == 'approved'
