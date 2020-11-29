@@ -4,11 +4,10 @@ services:
     image: mcr.microsoft.com/dotnet/core/sdk:3.1-alpine
     depends_on: 
       - airbag
-      - busybox
     command: dotnet test BlackboxTests/BlackboxTests.csproj
     volumes:
-      - ".:/airbag"
-    working_dir: '/airbag'
+      - ./:/airbag
+    working_dir: /airbag
     environment:
       - AIRBAG_URL=http://airbag:5001
       - VALID_AUTH_SERVER_URL=http://valid_auth_server
@@ -16,11 +15,6 @@ services:
       - AUTH_SERVER_DIFFERENT_ISSUER_URL=http://auth_server_with_different_issuer
       - AUTH_SERVER_DIFFERENT_SIGNATURE_URL=http://auth_server_with_different_signature
       - AIRBAG_WITHOUT_AUD_URL=http://airbag-without-aud-validation:5001
-  busybox:
-    image: busybox
-    command: pwd && ls . && ls /airbag && ls /airbag/BlackboxTests/BlackboxTests.csproj
-    volumes:
-      - ".:/airbag"
 
   airbag:
     image: airbag-blackbox
