@@ -1,0 +1,13 @@
+name: airbag
+on:
+  push:
+    branches: 
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+  deploy:
+    runs-on: ubuntu-latest
+    
