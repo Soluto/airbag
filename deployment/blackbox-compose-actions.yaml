@@ -1,0 +1,96 @@
+version: "3"
+services:
+  blackbox-tests:
+    image: mcr.microsoft.com/dotnet/core/sdk:3.1-alpine
+    depends_on: airbag
+    command: dotnet test BlackboxTests/BlackboxTests.csproj
+    volumes:
+      - '${{CF_VOLUME_NAME}}:${{CF_VOLUME_PATH}}'
+    working_dir: '${{CF_VOLUME_PATH}}/airbag'
+    environment:
+      - AIRBAG_URL=http://airbag:5001
+      - VALID_AUTH_SERVER_URL=http://valid_auth_server
+      - ANOTHER_VALID_AUTH_SERVER_URL=http://another_valid_auth_server
+      - AUTH_SERVER_DIFFERENT_ISSUER_URL=http://auth_server_with_different_issuer
+      - AUTH_SERVER_DIFFERENT_SIGNATURE_URL=http://auth_server_with_different_signature
+      - AIRBAG_WITHOUT_AUD_URL=http://airbag-without-aud-validation:5001
+
+  airbag:
+    image: airbag-blackbox
+    container_name: airbag
+    depends_on:
+      - valid_auth_server
+      - auth_server_with_different_issuer
+      - protected_api
+      - opa
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - AUTHORITY=http://valid_auth_server
+      - ISSUER=http://valid_auth_server
+      - AUDIENCE=api1
+      - AUTHORITY_ANOTHER=http://another_valid_auth_server
+      - ISSUER_ANOTHER=http://another_valid_auth_server
+      - AUDIENCE_ANOTHER=api1
+      - BACKEND_HOST_NAME=protected_api
+      - BACKEND_SERVICE_PORT=8080
+      - COLLECT_METRICS=false
+      - UNAUTHENTICATED_ROUTES=/isAlive,/foo*
+      - OPA_QUERY_PATH=protected_api/allow
+      - OPA_MODE=Enabled
+      - OPA_URL=http://opa:8181
+
+  airbag-without-aud-validation:
+    image: airbag-blackbox
+    container_name: airbag-without-aud-validation
+    depends_on:
+      - valid_auth_server
+      - auth_server_with_different_issuer
+      - protected_api
+      - opa
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - AUTHORITY_ANOTHER=http://valid_auth_server
+      - ISSUER_ANOTHER=http://valid_auth_server
+      - VALIDATE_AUDIENCE_ANOTHER=false
+      - BACKEND_HOST_NAME=protected_api
+      - BACKEND_SERVICE_PORT=8080
+      - COLLECT_METRICS=false
+      - UNAUTHENTICATED_ROUTES=/isAlive,/foo*
+      - OPA_QUERY_PATH=protected_api/allow
+      - OPA_MODE=Enabled
+      - OPA_URL=http://opa:8181
+
+  valid_auth_server:
+    image: sample-auth
+    container_name: valid_auth_server
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ISSUER=http://valid_auth_server
+
+  another_valid_auth_server:
+    image: sample-auth
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ISSUER=http://another_valid_auth_server
+
+  auth_server_with_different_issuer:
+    image: sample-auth
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ISSUER=http://someuri.com:1234
+
+  auth_server_with_different_signature:
+    image: sample-auth
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ISSUER=http://valid_auth_server
+
+  protected_api:
+    image: jmalloc/echo-server
+
+  opa:
+    image: openpolicyagent/opa
+    container_name: opa
+    command: run --server /policies
+    volumes:
+      - "/var/lib/docker/volumes/${{CF_VOLUME}}/_data/airbag/open-policy-agent:/policies"
