@@ -2,12 +2,33 @@ name: airbag
 on:
   push:
     branches: 
+      - master
+  pull_request:
+    branches:
+      - master
 
 jobs:
   test:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-  deploy:
+      - name: Setup .NET Core
+        uses: actions/setup-dotnet@v1
+        with:
+          dotnet-version: '3.1.x'
+      - name: Unit Test
+        run: dotnet test UnitTests
+  buildImage:
     runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Build Docker Image
+        uses: actions/build-push-action@v1
+        with:
+          file: deployment/Dockerfile
+      - name: Build Sample-auth Docker
+        uses: actions/build-push-action@v1
+        with:
+          file: deployment/SampleAuthServer-Dockerfile
+      
     
