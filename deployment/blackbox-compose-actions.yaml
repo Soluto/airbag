@@ -1,5 +1,21 @@
 version: "3"
 services:
+  blackbox-tests:
+    image: mcr.microsoft.com/dotnet/core/sdk:3.1-alpine
+    depends_on: 
+      - airbag
+    command: dotnet test BlackboxTests/BlackboxTests.csproj
+    volumes:
+      - /home/runner/work/airbag/airbag:/airbag
+    working_dir: /airbag
+    environment:
+      - AIRBAG_URL=http://airbag:5001
+      - VALID_AUTH_SERVER_URL=http://valid_auth_server
+      - ANOTHER_VALID_AUTH_SERVER_URL=http://another_valid_auth_server
+      - AUTH_SERVER_DIFFERENT_ISSUER_URL=http://auth_server_with_different_issuer
+      - AUTH_SERVER_DIFFERENT_SIGNATURE_URL=http://auth_server_with_different_signature
+      - AIRBAG_WITHOUT_AUD_URL=http://airbag-without-aud-validation:5001
+
   airbag:
     image: airbag-blackbox
     container_name: airbag

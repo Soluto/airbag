@@ -37,17 +37,17 @@ jobs:
           tags: |
             sample-auth
       - name: Setup blackbox environment
-        run: docker-compose -f deployment/blackbox-compose-actions.yaml up -d
-      - name: Setup .NET Core
-        uses: actions/setup-dotnet@v1
-        with:
-          dotnet-version: '3.1.x'
-      - name: Blackbox tests
-        run: dotnet test BlackboxTests/BlackboxTests.csproj
-        env:
-          AIRBAG_URL: http://airbag:5001
-          VALID_AUTH_SERVER_URL: http://valid_auth_server
-          ANOTHER_VALID_AUTH_SERVER_URL: http://another_valid_auth_server
-          AUTH_SERVER_DIFFERENT_ISSUER_URL: http://auth_server_with_different_issuer
-          AUTH_SERVER_DIFFERENT_SIGNATURE_URL: http://auth_server_with_different_signature
-          AIRBAG_WITHOUT_AUD_URL: http://airbag-without-aud-validation:5001
+        run: docker-compose -f deployment/blackbox-compose-actions.yaml up --abort-on-container-exit --exit-code-from blackbox-tests
+      # - name: Setup .NET Core
+      #   uses: actions/setup-dotnet@v1
+      #   with:
+      #     dotnet-version: '3.1.x'
+      # - name: Blackbox tests
+      #   run: dotnet test BlackboxTests/BlackboxTests.csproj
+      #   env:
+      #     AIRBAG_URL: http://airbag:5001
+      #     VALID_AUTH_SERVER_URL: http://valid_auth_server
+      #     ANOTHER_VALID_AUTH_SERVER_URL: http://another_valid_auth_server
+      #     AUTH_SERVER_DIFFERENT_ISSUER_URL: http://auth_server_with_different_issuer
+      #     AUTH_SERVER_DIFFERENT_SIGNATURE_URL: http://auth_server_with_different_signature
+      #     AIRBAG_WITHOUT_AUD_URL: http://airbag-without-aud-validation:5001
