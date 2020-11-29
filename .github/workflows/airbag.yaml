@@ -1,0 +1,53 @@
+name: airbag
+on:
+  push:
+    branches: 
+      - master
+  pull_request:
+    branches:
+      - master
+
+jobs:
+  unitTests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Setup .NET Core
+        uses: actions/setup-dotnet@v1
+        with:
+          dotnet-version: '3.1.x'
+      - name: Unit test
+        run: dotnet test UnitTests
+  buildAndTest:
+    runs-on: ubuntu-latest
+    needs:
+      - unitTests
+    steps:
+      - uses: actions/checkout@v2
+      - name: Build docker image
+        uses: docker/build-push-action@v2
+        with:
+          file: deployment/Dockerfile
+          tags: |
+            airbag-blackbox
+      - name: Build sample-auth Docker
+        uses: docker/build-push-action@v2
+        with:
+          file: deployment/SampleAuthServer-Dockerfile
+          tags: |
+            sample-auth
+      - name: Setup blackbox environment
+        run: docker-compose -f deployment/blackbox-compose-actions.yaml up --abort-on-container-exit --exit-code-from blackbox-tests
+      # - name: Setup .NET Core
+      #   uses: actions/setup-dotnet@v1
+      #   with:
+      #     dotnet-version: '3.1.x'
+      # - name: Blackbox tests
+      #   run: dotnet test BlackboxTests/BlackboxTests.csproj
+      #   env:
+      #     AIRBAG_URL: http://airbag:5001
+      #     VALID_AUTH_SERVER_URL: http://valid_auth_server
+      #     ANOTHER_VALID_AUTH_SERVER_URL: http://another_valid_auth_server
+      #     AUTH_SERVER_DIFFERENT_ISSUER_URL: http://auth_server_with_different_issuer
+      #     AUTH_SERVER_DIFFERENT_SIGNATURE_URL: http://auth_server_with_different_signature
+      #     AIRBAG_WITHOUT_AUD_URL: http://airbag-without-aud-validation:5001
