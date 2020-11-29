@@ -33,4 +33,4 @@ jobs:
         with:
           file: deployment/SampleAuthServer-Dockerfile
       - name: Run Docker Compose
-        run: docker-compose up -f deployment/blackbox-compose.yaml
+        run: docker-compose -f deployment/blackbox-compose.yaml up -d
