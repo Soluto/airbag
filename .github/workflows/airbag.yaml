@@ -27,7 +27,7 @@ jobs:
         with:
           file: deployment/Dockerfile
       - name: Build Sample-auth Docker
-        uses: actions/build-push-action@v1
+        uses: docker/build-push-action@v2
         with:
           file: deployment/SampleAuthServer-Dockerfile
       
