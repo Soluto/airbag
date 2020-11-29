@@ -37,4 +37,4 @@ jobs:
           tags: |
             sample-auth
       - name: Run Docker Compose
-        run: docker-compose -f deployment/blackbox-compose.yaml up --abort-on-container-exit --exit-code-from blackbox-tests
+        run: docker-compose -f deployment/blackbox-compose-actions.yaml up --abort-on-container-exit --exit-code-from blackbox-tests
