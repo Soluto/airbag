@@ -15,13 +15,27 @@ spec:
   contexts:
     - acreastus
   triggers:
-    - name: github
+    - name: github-push
       type: git
       repo: Soluto/airbag
       events:
         - push.heads
-        - push.tags
         - pullrequest.opened
+      pullRequestAllowForkEvents: false
+      commentRegex: /.*/gi
+      branchRegex: /^((?!master)$).*/gi
+      branchRegexInput: regex
+      provider: github
+      disabled: false
+      verified: true
+      context: github-solutobuild-soluto-public
+      contexts: []
+      variables: []
+    - name: github-tags
+      type: git
+      repo: Soluto/airbag
+      events:
+        - push.tags
       pullRequestAllowForkEvents: false
       commentRegex: /.*/gi
       branchRegex: /.*/gi
@@ -94,10 +108,9 @@ spec:
       stage: push
       type: pending-approval
       when:
-        condition:
-          all:
-            onlyTagRelease: '${{CF_BRANCH}} != ${{CF_RELEASE_TAG}}'
-            releaseTagExist: '${{CF_RELEASE_TAG}} != ""'
+        branch:
+          ignore:
+            - master
       title: Push image to Docker Hub?
       timeout:
         duration: 24
@@ -111,7 +124,7 @@ spec:
       candidate: '${{BuildImage}}'
       tags:
         - latest
-        - '${{CF_RELEASE_TAG}}'
+        - '${{CF_BRANCH_TAG_NORMALIZED}}'
       when:
         condition:
           all:
