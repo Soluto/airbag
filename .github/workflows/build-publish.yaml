@@ -1,0 +1,43 @@
+name: Build & Publish
+
+on:
+  push:
+    branches:
+      - master
+    tags:
+      - 'v[0-9]+.[0-9]+.[0-9]+'
+  pull_request:
+    branches:
+      - master
+
+env:
+  DOCKER_IMAGE_CACHE_PATH: /tmp/docker-image-cache
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-dotnet@v2
+        with:
+          dotnet-version: 3.1
+      - name: unit tests
+        run: dotnet test UnitTests
+      - name: lowercase full repository name
+        uses: actions/github-script@v6
+        id: lowercase-repository-name
+        with:
+          script: |
+            const { GITHUB_REPOSITORY } = process.env
+            return GITHUB_REPOSITORY.toLowerCase()
+          result-encoding: string
+      - name: set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+      - name: build sidecar docker image
+        uses: docker/build-push-action@v3
+        with:
+          file: deployment/Dockerfile
+          push: false
+          cache-to: type=local,dest=${{ env.DOCKER_IMAGE_CACHE_PATH }},mode=max
+          load: true
+          tags: ${{ steps.lowercase-repository-name.outputs.result }}:${{ github.sha }}
