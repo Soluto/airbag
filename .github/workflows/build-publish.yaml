@@ -12,6 +12,8 @@ on:
 
 env:
   DOCKER_IMAGE_CACHE_PATH: /tmp/docker-image-cache
+  SIDECAR_IMAGE_NAME: airbag-sidecar
+  SAMPLE_AUTH_IMAGE_NAME: sample-auth
 
 jobs:
   build:
@@ -40,4 +42,29 @@ jobs:
           push: false
           cache-to: type=local,dest=${{ env.DOCKER_IMAGE_CACHE_PATH }},mode=max
           load: true
-          tags: ${{ steps.lowercase-repository-name.outputs.result }}:${{ github.sha }}
+          tags: ${{ env.SIDECAR_IMAGE_NAME }}
+      - name: build blackbox docker image
+        uses: docker/build-push-action@v3
+        with:
+          file: deployment/SampleAuthServer-Dockerfile
+          push: false
+          load: true
+          tags: ${{ env.SAMPLE_AUTH_IMAGE_NAME }}
+      - name: setup blackbox environment
+        env:
+          REPOSITORY_VOLUME: ${{ github.workspace }}
+        run: docker-compose -f deployment/blackbox-compose.yaml up -d
+      - name: blackbox test
+        run: >-
+          docker run
+          -e 'AIRBAG_URL=http://airbag:5001'
+          -e 'VALID_AUTH_SERVER_URL=http://valid_auth_server'
+          -e 'ANOTHER_VALID_AUTH_SERVER_URL=http://another_valid_auth_server'
+          -e 'AUTH_SERVER_DIFFERENT_ISSUER_URL=http://auth_server_with_different_issuer'
+          -e 'AUTH_SERVER_DIFFERENT_SIGNATURE_URL=http://auth_server_with_different_signature'
+          -e 'AIRBAG_WITHOUT_AUD_URL=http://airbag-without-aud-validation:5001'
+          -v $(pwd):/airbag
+          --workdir=/airbag
+          --network container:airbag
+          mcr.microsoft.com/dotnet/core/sdk:3.1-alpine
+          dotnet test BlackboxTests/BlackboxTests.csproj
