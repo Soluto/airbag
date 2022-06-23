@@ -1,6 +1,8 @@
 FROM mcr.microsoft.com/dotnet/sdk:2.1 AS build-env
 WORKDIR /app
 
+RUN echo amit
+
 # Copy csproj and restore as distinct layers
 COPY SampleAuthServer/*.csproj ./
 RUN dotnet restore
