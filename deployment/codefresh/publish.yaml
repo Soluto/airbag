@@ -20,7 +20,7 @@ spec:
         - push.tags
       pullRequestAllowForkEvents: false
       commentRegex: /.*/gi
-      branchRegex: /.*/gi
+      branchRegex: /master/gi
       branchRegexInput: regex
       provider: github
       disabled: false
@@ -69,7 +69,7 @@ spec:
       candidate: ${{BuildImage}}
       tags:
         - latest
-        - '${{CF_BRANCH}}'
+        - '${{CF_RELEASE_TAG}}'
       when:
         condition:
           all:
