@@ -28,7 +28,7 @@ spec:
       provider: github
       disabled: false
       verified: true
-      context: github-verified
+      context: github-solutobuild-soluto-public
       contexts: []
       variables: []
 
@@ -43,7 +43,7 @@ spec:
       repo: '${{CF_REPO_OWNER}}/${{CF_REPO_NAME}}'
       revision: ${{CF_REVISION}}
       stage: build
-      git: github
+      git: github-solutobuild-soluto-public
 
     UnitTests:
       stage: build
