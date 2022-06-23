@@ -96,7 +96,7 @@ spec:
       when:
         condition:
           all:
-            releaseTagExist: 'includes("${{CF_RELEASE_TAG}}", "{{CF_RELEASE_TAG}}") == false'
+            releaseTagExist: '"${{CF_RELEASE_TAG}}" != ""'
         branch:
           only:
             - master
