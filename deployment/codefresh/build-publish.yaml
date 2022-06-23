@@ -24,7 +24,7 @@ spec:
         - pullrequest.opened
       pullRequestAllowForkEvents: false
       commentRegex: /.*/gi
-      branchRegex: /^((?!master)).*/gi
+      branchRegex: /.*/gi
       branchRegexInput: regex
       provider: github
       disabled: false
@@ -96,6 +96,7 @@ spec:
       when:
         condition:
           all:
+            onlyTagRelease: '"${{CF_BRANCH}}" != "${{CF_RELEASE_TAG}}"'
             releaseTagExist: '"${{CF_RELEASE_TAG}}" != ""'
       title: Push image to Docker Hub?
       timeout:
