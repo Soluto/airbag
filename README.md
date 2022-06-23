@@ -1,6 +1,6 @@
 # airbag
-[![Build Status](https://travis-ci.org/Soluto/airbag.svg?branch=master)](https://travis-ci.org/Soluto/airbag)   
-   
+[![Codefresh build status]( https://g.codefresh.io/api/badges/pipeline/soluto/airbag%2Ftest?type=cf-1&key=eyJhbGciOiJIUzI1NiJ9.NTkwOTg1MmQ2ZDAxYjcwMDA2Yjc1ODBm.fODYFsnTAGVNVeEAA6lI0g-sTAfHjh5B9BWrOtDvSSE)]( https://g.codefresh.io/pipelines/edit/new/builds?id=5e25741c6ec1ec2de7cb9068&pipeline=test&projects=airbag&projectId=5e134c726e1ebe541cd3811b)
+
 airbag is a tiny sidecar for your docker containers, meant to handle jwt authentication and basic metrics collection for you.
 
 ## How to use it
