@@ -27,7 +27,7 @@ spec:
       branchRegex: /.*/gi
       branchRegexInput: regex
       provider: github
-      disabled: true
+      disabled: false
       verified: true
       context: github-solutobuild-soluto-public
       contexts: []
