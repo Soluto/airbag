@@ -20,7 +20,7 @@ spec:
         - push.tags
       pullRequestAllowForkEvents: false
       commentRegex: /.*/gi
-      branchRegex: /.*/gi
+      branchRegex: /master/gi
       branchRegexInput: regex
       provider: github
       disabled: false
