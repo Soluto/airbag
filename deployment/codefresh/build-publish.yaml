@@ -97,9 +97,6 @@ spec:
         condition:
           all:
             releaseTagExist: '"${{CF_RELEASE_TAG}}" != ""'
-        branch:
-          only:
-            - master
       title: Push image to Docker Hub?
       timeout:
         duration: 24
