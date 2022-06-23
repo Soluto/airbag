@@ -96,8 +96,8 @@ spec:
       when:
         condition:
           all:
-            onlyTagRelease: '"${{CF_BRANCH}}" != "${{CF_RELEASE_TAG}}"'
-            releaseTagExist: '"${{CF_RELEASE_TAG}}" != ""'
+            onlyTagRelease: '${{CF_BRANCH}} != ${{CF_RELEASE_TAG}}'
+            releaseTagExist: '${{CF_RELEASE_TAG}} != ""'
       title: Push image to Docker Hub?
       timeout:
         duration: 24
