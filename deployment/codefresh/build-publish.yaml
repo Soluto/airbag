@@ -1,0 +1,121 @@
+version: '1.0'
+kind: pipeline
+metadata:
+  name: airbag/build&publish
+  project: airbag
+spec:
+  terminationPolicy:
+    - type: branch
+      event: onCreate
+  variables:
+    - key: IMAGE_NAME
+      value: soluto/airbag
+    - key: SAMPLE_AUTH_IMAGE
+      value: sample-auth
+  contexts:
+    - acreastus
+  triggers:
+    - name: github
+      type: git
+      repo: Soluto/airbag
+      events:
+        - push.heads
+        - push.tags
+        - pullrequest.opened
+      pullRequestAllowForkEvents: false
+      commentRegex: /.*/gi
+      branchRegex: /.*/gi
+      branchRegexInput: regex
+      provider: github
+      disabled: true
+      verified: true
+      context: github-solutobuild-soluto-public
+      contexts: []
+      variables: []
+  stages:
+    - build
+    - test
+    - push
+  steps:
+    CloneRepository:
+      type: git-clone
+      description: Cloning repository
+      repo: '${{CF_REPO_OWNER}}/${{CF_REPO_NAME}}'
+      revision: '${{CF_REVISION}}'
+      stage: build
+      git: github-solutobuild-soluto-public
+    UnitTests:
+      stage: build
+      image: 'mcr.microsoft.com/dotnet/core/sdk:3.1-alpine'
+      title: Unit tests
+      working_directory: '${{CloneRepository}}'
+      commands:
+        - dotnet test UnitTests
+    BuildImage:
+      stage: build
+      title: Building sidecar Docker Image
+      type: build
+      image_name: '${{IMAGE_NAME}}'
+      tag: '${{CF_REVISION}}'
+      working_directory: '${{CloneRepository}}'
+      dockerfile: deployment/Dockerfile
+    BlackboxSetup:
+      stage: test
+      type: build
+      title: Building image for blackbox tests
+      image_name: '${{SAMPLE_AUTH_IMAGE}}'
+      tag: '${{CF_REVISION}}'
+      working_directory: '${{CloneRepository}}'
+      dockerfile: deployment/SampleAuthServer-Dockerfile
+    BlackboxTests:
+      stage: test
+      title: Blackbox tests
+      working_directory: '${{CloneRepository}}'
+      type: composition
+      composition: /deployment/blackbox-compose.yaml
+      composition_candidates:
+        blackbox-tests:
+          image: 'mcr.microsoft.com/dotnet/core/sdk:3.1-alpine'
+          command: dotnet test BlackboxTests/BlackboxTests.csproj
+          volumes:
+            - '${{CF_VOLUME_NAME}}:${{CF_VOLUME_PATH}}'
+          working_dir: '${{CF_VOLUME_PATH}}/airbag'
+          environment:
+            - 'AIRBAG_URL=http://airbag:5001'
+            - 'VALID_AUTH_SERVER_URL=http://valid_auth_server'
+            - 'ANOTHER_VALID_AUTH_SERVER_URL=http://another_valid_auth_server'
+            - >-
+              AUTH_SERVER_DIFFERENT_ISSUER_URL=http://auth_server_with_different_issuer
+            - >-
+              AUTH_SERVER_DIFFERENT_SIGNATURE_URL=http://auth_server_with_different_signature
+            - 'AIRBAG_WITHOUT_AUD_URL=http://airbag-without-aud-validation:5001'
+    PushApproval:
+      fail_fast: false
+      stage: push
+      type: pending-approval
+      when:
+        condition:
+          all:
+            releaseTagExist: 'includes("${{CF_RELEASE_TAG}}", "{{CF_RELEASE_TAG}}") == false'
+        branch:
+          only:
+            - master
+      title: Push image to Docker Hub?
+      timeout:
+        duration: 24
+        finalState: denied
+    Push:
+      type: push
+      stage: push
+      title: Pushing Image to Docker Hub
+      registry: dockerhub-tweek
+      image_name: '${{IMAGE_NAME}}'
+      candidate: '${{BuildImage}}'
+      tags:
+        - latest
+        - '${{CF_RELEASE_TAG}}'
+      when:
+        condition:
+          all:
+            approved: steps.PushApproval.result == 'approved'
+
