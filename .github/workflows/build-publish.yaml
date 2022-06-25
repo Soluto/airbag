@@ -2,8 +2,6 @@ name: Build & Publish
 
 on:
   push:
-    branches:
-      - master
     tags:
       - 'v[0-9]+.[0-9]+.[0-9]+'
   pull_request:
@@ -12,8 +10,10 @@ on:
 
 env:
   DOCKER_IMAGE_CACHE_PATH: /tmp/docker-image-cache
+  DOCKER_IMAGE_TAG_BEFORE_PUSH: airbag-image
   SIDECAR_IMAGE_NAME: airbag-sidecar
   SAMPLE_AUTH_IMAGE_NAME: sample-auth
+  
 
 jobs:
   build:
@@ -25,14 +25,6 @@ jobs:
           dotnet-version: 3.1
       - name: unit tests
         run: dotnet test UnitTests
-      - name: lowercase full repository name
-        uses: actions/github-script@v6
-        id: lowercase-repository-name
-        with:
-          script: |
-            const { GITHUB_REPOSITORY } = process.env
-            return GITHUB_REPOSITORY.toLowerCase()
-          result-encoding: string
       - name: set up Docker Buildx
         uses: docker/setup-buildx-action@v2
       - name: build sidecar docker image
@@ -68,3 +60,45 @@ jobs:
           --network container:airbag
           mcr.microsoft.com/dotnet/core/sdk:3.1-alpine
           dotnet test BlackboxTests/BlackboxTests.csproj
+      - name: upload docker image artifact
+        uses: actions/upload-artifact@v3
+        if: ${{ github.event_name == 'push' && contains(github.ref, 'refs/tags/') }}
+        with:
+          name: ${{ env.DOCKER_IMAGE_TAG_BEFORE_PUSH }}
+          path: ${{ env.DOCKER_IMAGE_CACHE_PATH }}
+          retention-days: 1
+
+  publish:
+    runs-on: ubuntu-latest
+    needs: build
+    if: ${{ github.event_name == 'push' && github.ref_type == 'tag' }}
+    steps:
+      - name: set docker image tag
+        uses: actions/github-script@v6
+        id: docker-image-tag
+        with:
+          script: |
+            const { GITHUB_REPOSITORY } = process.env
+            return GITHUB_REPOSITORY.toLowerCase()
+          result-encoding: string
+      - name: dockerhub login
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.ORG_CR_WRITER_USER }}
+          password: ${{ secrets.ORG_CR_WRITER_PASSWORD }}
+      - name: download artifact
+        uses: actions/download-artifact@v3
+        with:
+          name: ${{ env.DOCKER_IMAGE_TAG_BEFORE_PUSH }}
+          path: ${{ env.DOCKER_IMAGE_CACHE_PATH }}
+      - name: set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+      # - name: push docker image
+      #   uses: docker/build-push-action@v3
+      #   with:
+      #     push: true
+      #     tags: ${{ steps.docker-image-tag.outputs.result }}:${{ github.ref_name }}
+      #     cache-from: type=local,src=${{ env.DOCKER_IMAGE_CACHE_PATH }}
+      - name: print tag
+        run: |-
+          echo ${{ steps.docker-image-tag.outputs.result }}:${{ github.ref_name }}
