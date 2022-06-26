@@ -99,5 +99,5 @@ jobs:
         with:
           file: deployment/Dockerfile
           push: true
-          tags: ${{ steps.docker-image-tag.outputs.result }}:${{ github.ref_name }}
+          tags: ${{ steps.docker-image-tag.outputs.result }}:${{ github.ref_name }},${{ steps.docker-image-tag.outputs.result }}:latest
           cache-from: type=local,src=${{ env.DOCKER_IMAGE_CACHE_PATH }}
