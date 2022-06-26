@@ -1,7 +1,7 @@
 version: '3'
 services:
   airbag:
-    image: ${{BuildImage}}
+    image: ${SIDECAR_IMAGE_NAME}
     container_name: airbag
     depends_on:
       - valid_auth_server
@@ -25,7 +25,7 @@ services:
       - OPA_URL=http://opa:8181
 
   airbag-without-aud-validation:
-    image: ${{BuildImage}}
+    image: ${SIDECAR_IMAGE_NAME}
     container_name: airbag-without-aud-validation
     depends_on:
       - valid_auth_server
@@ -46,26 +46,26 @@ services:
       - OPA_URL=http://opa:8181
 
   valid_auth_server:
-    image: ${{BlackboxSetup}}
+    image: ${SAMPLE_AUTH_IMAGE_NAME}
     container_name: valid_auth_server
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
       - ISSUER=http://valid_auth_server
 
   another_valid_auth_server:
-    image: ${{BlackboxSetup}}
+    image: ${SAMPLE_AUTH_IMAGE_NAME}
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
       - ISSUER=http://another_valid_auth_server
 
   auth_server_with_different_issuer:
-    image: ${{BlackboxSetup}}
+    image: ${SAMPLE_AUTH_IMAGE_NAME}
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
       - ISSUER=http://someuri.com:1234
 
   auth_server_with_different_signature:
-    image: ${{BlackboxSetup}}
+    image: ${SAMPLE_AUTH_IMAGE_NAME}
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
       - ISSUER=http://valid_auth_server
@@ -78,4 +78,4 @@ services:
     container_name: opa
     command: run --server /policies
     volumes:
-      - '/var/lib/docker/volumes/${{CF_VOLUME}}/_data/airbag/open-policy-agent:/policies'
+      - '${REPOSITORY_VOLUME}/open-policy-agent:/policies'

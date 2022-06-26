@@ -1,0 +1,103 @@
+name: Build & Publish
+
+on:
+  create:
+    tags:
+      - 'v[0-9]+.[0-9]+.[0-9]+'
+  pull_request:
+    branches:
+      - master
+
+env:
+  DOCKER_IMAGE_CACHE_PATH: /tmp/docker-image-cache
+  DOCKER_IMAGE_TAG_BEFORE_PUSH: airbag-image
+  SIDECAR_IMAGE_NAME: airbag-sidecar
+  SAMPLE_AUTH_IMAGE_NAME: sample-auth
+  
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-dotnet@v2
+        with:
+          dotnet-version: 3.1
+      - name: unit tests
+        run: dotnet test UnitTests
+      - name: set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+      - name: build sidecar docker image
+        uses: docker/build-push-action@v3
+        with:
+          file: deployment/Dockerfile
+          push: false
+          cache-to: type=local,dest=${{ env.DOCKER_IMAGE_CACHE_PATH }},mode=max
+          load: true
+          tags: ${{ env.SIDECAR_IMAGE_NAME }}
+      - name: build blackbox docker image
+        uses: docker/build-push-action@v3
+        with:
+          file: deployment/SampleAuthServer-Dockerfile
+          push: false
+          load: true
+          tags: ${{ env.SAMPLE_AUTH_IMAGE_NAME }}
+      - name: setup blackbox environment
+        env:
+          REPOSITORY_VOLUME: ${{ github.workspace }}
+        run: docker-compose -f deployment/blackbox-compose.yaml up -d
+      - name: blackbox test
+        run: >-
+          docker run
+          -e 'AIRBAG_URL=http://airbag:5001'
+          -e 'VALID_AUTH_SERVER_URL=http://valid_auth_server'
+          -e 'ANOTHER_VALID_AUTH_SERVER_URL=http://another_valid_auth_server'
+          -e 'AUTH_SERVER_DIFFERENT_ISSUER_URL=http://auth_server_with_different_issuer'
+          -e 'AUTH_SERVER_DIFFERENT_SIGNATURE_URL=http://auth_server_with_different_signature'
+          -e 'AIRBAG_WITHOUT_AUD_URL=http://airbag-without-aud-validation:5001'
+          -v $(pwd):/airbag
+          --workdir=/airbag
+          --network container:airbag
+          mcr.microsoft.com/dotnet/core/sdk:3.1-alpine
+          dotnet test BlackboxTests/BlackboxTests.csproj
+      - name: upload docker image artifact
+        uses: actions/upload-artifact@v3
+        if: ${{ github.event_name == 'create' && github.event.ref_type == 'tag' }}
+        with:
+          name: ${{ env.DOCKER_IMAGE_TAG_BEFORE_PUSH }}
+          path: ${{ env.DOCKER_IMAGE_CACHE_PATH }}
+          retention-days: 1
+
+  publish:
+    runs-on: ubuntu-latest
+    needs: build
+    if: ${{ github.event_name == 'create' && github.event.ref_type == 'tag' }}
+    steps:
+      - uses: actions/checkout@v3
+      - name: set docker image tag
+        uses: actions/github-script@v6
+        id: docker-image-tag
+        with:
+          script: |
+            const { GITHUB_REPOSITORY } = process.env
+            return GITHUB_REPOSITORY.toLowerCase()
+          result-encoding: string
+      - name: dockerhub login
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+      - name: download artifact
+        uses: actions/download-artifact@v3
+        with:
+          name: ${{ env.DOCKER_IMAGE_TAG_BEFORE_PUSH }}
+          path: ${{ env.DOCKER_IMAGE_CACHE_PATH }}
+      - name: set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+      - name: push docker image
+        uses: docker/build-push-action@v3
+        with:
+          file: deployment/Dockerfile
+          push: true
+          tags: ${{ steps.docker-image-tag.outputs.result }}:${{ github.ref_name }}
+          cache-from: type=local,src=${{ env.DOCKER_IMAGE_CACHE_PATH }}
