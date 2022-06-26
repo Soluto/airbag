@@ -73,6 +73,7 @@ jobs:
     needs: build
     if: ${{ github.event_name == 'create' && github.event.ref_type == 'tag' }}
     steps:
+      - uses: actions/checkout@v3
       - name: set docker image tag
         uses: actions/github-script@v6
         id: docker-image-tag
@@ -84,8 +85,8 @@ jobs:
       - name: dockerhub login
         uses: docker/login-action@v2
         with:
-          username: ${{ secrets.ORG_CR_WRITER_USER }}
-          password: ${{ secrets.ORG_CR_WRITER_PASSWORD }}
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
       - name: download artifact
         uses: actions/download-artifact@v3
         with:
@@ -93,13 +94,10 @@ jobs:
           path: ${{ env.DOCKER_IMAGE_CACHE_PATH }}
       - name: set up Docker Buildx
         uses: docker/setup-buildx-action@v2
-      # - name: push docker image
-      #   uses: docker/build-push-action@v3
-      #   with:
-      #     push: true
-      #     tags: ${{ steps.docker-image-tag.outputs.result }}:${{ github.ref_name }}
-      #     cache-from: type=local,src=${{ env.DOCKER_IMAGE_CACHE_PATH }}
-      - name: print tag
-        run: |-
-          echo ${{ steps.docker-image-tag.outputs.result }}:${{ github.ref_name }}
-          docker ls
+      - name: push docker image
+        uses: docker/build-push-action@v3
+        with:
+          file: deployment/Dockerfile
+          push: true
+          tags: ${{ steps.docker-image-tag.outputs.result }}:${{ github.ref_name }}
+          cache-from: type=local,src=${{ env.DOCKER_IMAGE_CACHE_PATH }}
