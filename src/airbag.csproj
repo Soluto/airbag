@@ -6,7 +6,7 @@
 
   <ItemGroup>
     <PackageReference Include="App.Metrics.AspNetCore" Version="3.1.0" />
-    <PackageReference Include="App.Metrics.Formatters.Prometheus" Version="3.1.0" />
+    <PackageReference Include="App.Metrics.Formatters.Prometheus" Version="4.3.0" />
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="3.1.0" />
     <PackageReference Include="Microsoft.AspNetCore.Proxy" Version="0.2.0" />
     <PackageReference Include="restease" Version="1.4.10" />
